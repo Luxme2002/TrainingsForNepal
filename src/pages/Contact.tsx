@@ -10,10 +10,10 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 const contactInfo = [
-  { icon: MapPin, label: "Visit Us", value: "Putalisadak, Kathmandu, Nepal\nNear Shanker Dev Campus" },
-  { icon: Phone, label: "Call Us", value: "+977-01-4XXXXXX\n+977-98XXXXXXXX" },
-  { icon: Mail, label: "Email Us", value: "info@trainingsfornepal.com\nadmissions@trainingsfornepal.com" },
-  { icon: Clock, label: "Office Hours", value: "Sun - Fri: 7:00 AM - 7:00 PM\nSaturday: 8:00 AM - 2:00 PM" },
+  { icon: MapPin, label: "Visit Us", value: "Together for Nepal Main Office" },
+  { icon: Phone, label: "Call Us", value: "9744465510" },
+  { icon: Mail, label: "Email Us", value: "laxmikathariya2002@gmail.com" },
+  { icon: Clock, label: "Office Hours", value: "9:00 AM - 4:00 PM" },
 ];
 
 const Contact = () => {
@@ -23,10 +23,20 @@ const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Open mailto link to send message
+    const form = e.target as HTMLFormElement;
+    const name = (form.elements.namedItem("fullName") as HTMLInputElement)?.value || "";
+    const email = (form.elements.namedItem("email") as HTMLInputElement)?.value || "";
+    const subject = (form.elements.namedItem("subject") as HTMLInputElement)?.value || "";
+    const message = (form.elements.namedItem("message") as HTMLTextAreaElement)?.value || "";
+    
+    const mailtoLink = `mailto:laxmikathariya2002@gmail.com?subject=${encodeURIComponent(subject || "Website Inquiry")}&body=${encodeURIComponent(`From: ${name} (${email})\n\n${message}`)}`;
+    window.open(mailtoLink, "_blank");
+    
     setTimeout(() => {
       setLoading(false);
-      toast({ title: "Message Sent!", description: "We'll get back to you within 24 hours." });
-    }, 1000);
+      toast({ title: "Message Prepared!", description: "Your email client should open with the message. You can also email us directly at laxmikathariya2002@gmail.com." });
+    }, 500);
   };
 
   return (
@@ -39,7 +49,7 @@ const Contact = () => {
             <h1 className="mb-4 font-display text-4xl font-bold text-foreground lg:text-5xl">
               Get in <span className="text-gradient">Touch</span>
             </h1>
-            <p className="text-lg text-muted-foreground">Have questions about our courses? Want to schedule a campus visit? We'd love to hear from you.</p>
+            <p className="text-lg text-muted-foreground">Have questions about our courses? Want to schedule a visit? We'd love to hear from you.</p>
           </motion.div>
         </div>
       </section>
@@ -65,12 +75,12 @@ const Contact = () => {
           <form onSubmit={handleSubmit} className="gradient-card space-y-5 rounded-xl border border-border p-6 lg:col-span-3">
             <h3 className="font-display text-xl font-semibold text-foreground">Send a Message</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input placeholder="Full Name" required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
-              <Input placeholder="Email Address" type="email" required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
+              <Input name="fullName" placeholder="Full Name" required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
+              <Input name="email" placeholder="Email Address" type="email" required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
             </div>
-            <Input placeholder="Phone Number" className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
-            <Input placeholder="Subject (e.g., Full Stack Development Inquiry)" className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
-            <Textarea placeholder="Your message..." rows={5} required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
+            <Input name="phone" placeholder="Phone Number" className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
+            <Input name="subject" placeholder="Subject (e.g., Python Course Inquiry)" className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
+            <Textarea name="message" placeholder="Your message..." rows={5} required className="border-border bg-secondary/50 text-foreground placeholder:text-muted-foreground" />
             <Button type="submit" disabled={loading} className="w-full gradient-primary border-0 text-primary-foreground glow-red-sm hover:opacity-90">
               {loading ? "Sending..." : (<>Send Message <Send className="ml-2 h-4 w-4" /></>)}
             </Button>
@@ -81,7 +91,7 @@ const Contact = () => {
       {/* Map */}
       <section className="border-t border-border">
         <iframe
-          title="Trainings for Nepal Location"
+          title="Together for Nepal Location"
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.3!2d85.319!3d27.705!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjfCsDQyJzE4LjAiTiA4NcKwMTknMDguNiJF!5e0!3m2!1sen!2snp!4v1"
           width="100%"
           height="400"

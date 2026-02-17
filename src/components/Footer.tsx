@@ -38,9 +38,9 @@ const Footer = () => (
         </div>
 
         <div>
-          <h4 className="mb-4 font-display font-semibold text-foreground">Popular Courses</h4>
+          <h4 className="mb-4 font-display font-semibold text-foreground">Our Courses</h4>
           <ul className="space-y-2">
-            {["Full Stack Development", "Python & AI/ML", "Cloud Computing (AWS)", "Cybersecurity", "Data Science & Analytics", "Hardware & Networking"].map((c) => (
+            {["Digital Literacy", "Basic to Intermediate Python", "Digital Marketing", "Hardware & Networking", "Professional Development"].map((c) => (
               <li key={c}>
                 <span className="text-sm text-muted-foreground">{c}</span>
               </li>
@@ -53,15 +53,15 @@ const Footer = () => (
           <ul className="space-y-3">
             <li className="flex items-start gap-3 text-sm text-muted-foreground">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-              Putalisadak, Kathmandu, Nepal
+              Together for Nepal Main Office
             </li>
             <li className="flex items-center gap-3 text-sm text-muted-foreground">
               <Phone className="h-4 w-4 shrink-0 text-primary" />
-              +977-01-4XXXXXX
+              9744465510
             </li>
             <li className="flex items-center gap-3 text-sm text-muted-foreground">
               <Mail className="h-4 w-4 shrink-0 text-primary" />
-              info@trainingsfornepal.com
+              laxmikathariya2002@gmail.com
             </li>
           </ul>
         </div>
