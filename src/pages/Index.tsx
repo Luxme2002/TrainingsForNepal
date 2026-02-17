@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, Code, Cpu, Cloud, Shield, BarChart3, Users, Star, CheckCircle2 } from "lucide-react";
+import { ArrowRight, Code, Cpu, Cloud, BarChart3, Users, Star, CheckCircle2, Monitor, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -17,17 +17,16 @@ const stats = [
 ];
 
 const courses = [
-  { icon: Code, title: "Full Stack Development", desc: "Master MERN, Django, and modern web frameworks used by top companies worldwide.", tag: "Most Popular" },
-  { icon: Cpu, title: "Hardware & Networking", desc: "Hands-on training in computer hardware repair, networking (CCNA), and system administration.", tag: "Practical" },
-  { icon: Cloud, title: "Cloud Computing", desc: "AWS, Azure & GCP certifications with real-world projects and deployment strategies.", tag: "In Demand" },
-  { icon: Shield, title: "Cybersecurity", desc: "Ethical hacking, penetration testing, SOC analysis, and security certifications.", tag: "Trending" },
-  { icon: BarChart3, title: "Data Science & AI", desc: "Python, Machine Learning, Deep Learning, and AI-powered application development.", tag: "Future Ready" },
-  { icon: Users, title: "Professional Development", desc: "Soft skills, project management (PMP), Agile/Scrum, and leadership training.", tag: "Career Boost" },
+  { icon: Monitor, title: "Digital Literacy", desc: "Master essential computer skills, internet navigation, and digital tools for the modern workplace.", tag: "Essential" },
+  { icon: Code, title: "Basic to Intermediate Python", desc: "Learn Python programming from scratch — variables, loops, functions, OOP, and real-world projects.", tag: "Most Popular" },
+  { icon: Megaphone, title: "Digital Marketing", desc: "Google Ads, SEO, social media marketing, content strategy, and analytics for business growth.", tag: "In Demand" },
+  { icon: Cpu, title: "Hardware & Networking", desc: "Hands-on PC assembly, repair, troubleshooting, CCNA networking, and system administration.", tag: "Practical" },
+  { icon: Users, title: "Professional Development", desc: "Soft skills, project management, leadership training, interview prep, and workplace readiness.", tag: "Career Boost" },
 ];
 
 const testimonials = [
   { name: "Aarav Shrestha", role: "Full Stack Developer at Fusemachines", text: "Trainings for Nepal transformed my career. The hands-on approach and industry-relevant curriculum gave me the skills to land my dream job.", avatar: trainer1 },
-  { name: "Priya Maharjan", role: "Cloud Engineer at Deerwalk", text: "The AWS certification training was exceptional. The instructors are experienced professionals who make complex concepts easy to understand.", avatar: trainer2 },
+  { name: "Priya Maharjan", role: "Cloud Engineer at Deerwalk", text: "The training was exceptional. The instructors are experienced professionals who make complex concepts easy to understand.", avatar: trainer2 },
 ];
 
 const Index = () => {
@@ -54,8 +53,8 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.1 }}
               className="mb-6 font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl"
             >
-              Empower Your Career in Nepal with{" "}
-              <span className="text-gradient">High-Demand Tech Skills</span>
+              Empowering Nepal Through{" "}
+              <span className="text-gradient">High-Tech Education.</span>
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 30 }}
@@ -63,7 +62,7 @@ const Index = () => {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="mb-8 max-w-lg text-lg leading-relaxed text-muted-foreground"
             >
-              Join Nepal's premier training center for coding, hardware, software, cloud computing, and professional development. Industry-certified trainers. Job-ready curriculum.
+              Join thousands of students and industry experts building the future of technology in the heart of the Himalayas.
             </motion.p>
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -90,14 +89,7 @@ const Index = () => {
       <section className="border-y border-border bg-card/50">
         <div className="container mx-auto grid grid-cols-2 gap-6 px-4 py-12 lg:grid-cols-4 lg:px-8">
           {stats.map((s, i) => (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="text-center"
-            >
+            <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center">
               <div className="font-display text-3xl font-bold text-gradient sm:text-4xl">{s.value}</div>
               <div className="mt-1 text-sm text-muted-foreground">{s.label}</div>
             </motion.div>
@@ -109,10 +101,10 @@ const Index = () => {
       <SectionWrapper>
         <div className="mb-12 text-center">
           <h2 className="mb-3 font-display text-3xl font-bold text-foreground lg:text-4xl">
-            Industry-Leading <span className="text-gradient">Training Programs</span>
+            Our <span className="text-gradient">Training Programs</span>
           </h2>
           <p className="mx-auto max-w-xl text-muted-foreground">
-            From coding bootcamps to hardware certifications — we offer comprehensive IT training programs designed for Nepal's growing tech industry.
+            From digital literacy to professional development — comprehensive training programs for Nepal's growing workforce.
           </p>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

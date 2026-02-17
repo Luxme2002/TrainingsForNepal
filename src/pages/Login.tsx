@@ -1,13 +1,34 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { GraduationCap, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { GraduationCap, Mail, Lock, User, Eye, EyeOff, Shield, BookOpen, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+type Role = "student" | "trainer" | "admin";
+
+const roles = [
+  { key: "student" as Role, label: "Student", icon: BookOpen, color: "bg-primary/10 text-primary border-primary/30" },
+  { key: "trainer" as Role, label: "Trainer", icon: Users, color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
+  { key: "admin" as Role, label: "Admin", icon: Shield, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
+];
+
+const dashboardRoutes: Record<Role, string> = {
+  student: "/student",
+  trainer: "/trainer",
+  admin: "/admin",
+};
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role>("student");
+  const navigate = useNavigate();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    navigate(dashboardRoutes[selectedRole]);
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -32,11 +53,33 @@ const Login = () => {
               {isSignup ? "Create Account" : "Welcome Back"}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {isSignup ? "Start your tech journey today" : "Empowering Nepal Through Tech Education"}
+              {isSignup ? "Start your tech journey today" : "Access your tech training dashboard"}
             </p>
           </div>
 
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+          {/* Role Selection */}
+          <div className="mb-5">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Continue as a</p>
+            <div className="grid grid-cols-3 gap-2">
+              {roles.map((role) => (
+                <button
+                  key={role.key}
+                  type="button"
+                  onClick={() => setSelectedRole(role.key)}
+                  className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition-all ${
+                    selectedRole === role.key
+                      ? `${role.color} border-2`
+                      : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                  }`}
+                >
+                  <role.icon className="h-4 w-4" />
+                  {role.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {isSignup && (
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -45,7 +88,7 @@ const Login = () => {
             )}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Email Address" type="email" className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground" />
+              <Input placeholder="Email or Username" type="email" className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground" />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -66,9 +109,24 @@ const Login = () => {
             )}
 
             <Button type="submit" className="w-full gradient-primary border-0 text-primary-foreground glow-red-sm hover:opacity-90">
-              {isSignup ? "Create Account" : "Sign In"}
+              {isSignup ? "Create Account" : "Sign In to Dashboard"}
             </Button>
           </form>
+
+          <div className="mt-4 flex items-center gap-3">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">OR CONTINUE WITH</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground">
+              Google
+            </Button>
+            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground">
+              LinkedIn
+            </Button>
+          </div>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
@@ -76,6 +134,14 @@ const Login = () => {
               {isSignup ? "Sign In" : "Sign Up"}
             </button>
           </div>
+
+          <div className="mt-4 text-center">
+            <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">← Back to Home</Link>
+          </div>
+
+          <p className="mt-4 text-center text-[10px] text-muted-foreground">
+            By accessing Trainings for Nepal, you agree to our Code of Conduct and Privacy Policy.
+          </p>
         </div>
       </motion.div>
     </div>
