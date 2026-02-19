@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { icon: BarChart3, label: "Dashboard" },
@@ -30,7 +31,7 @@ const stats = [
   { icon: TrendingUp, label: "New Inquiries", value: "48", change: "+8", color: "from-yellow-500/20 to-yellow-500/5" },
 ];
 
-const courses = [
+const initialCourses = [
   { name: "Digital Literacy", students: 280, batches: 8, trainer: "Rajan Thapa", fee: "NPR 8,000", status: "Active", rating: 4.8 },
   { name: "Basic to Intermediate Python", students: 420, batches: 12, trainer: "Sandip Lamichhane", fee: "NPR 25,000", status: "Active", rating: 4.9 },
   { name: "Digital Marketing", students: 350, batches: 10, trainer: "Priya Sharma", fee: "NPR 18,000", status: "Active", rating: 4.7 },
@@ -38,7 +39,7 @@ const courses = [
   { name: "Professional Development", students: 125, batches: 4, trainer: "Anjali Rai", fee: "NPR 15,000", status: "Active", rating: 4.5 },
 ];
 
-const allStudents = [
+const initialStudents = [
   { name: "Aaryan Thapa", email: "aaryan@gmail.com", course: "Python", enrolled: "Jan 10, 2026", status: "Active", fee: "NPR 25,000" },
   { name: "Sita Rai", email: "sita.rai@gmail.com", course: "Digital Marketing", enrolled: "Jan 12, 2026", status: "Active", fee: "NPR 18,000" },
   { name: "Rahul Hamal", email: "rahul.h@gmail.com", course: "Hardware & Networking", enrolled: "Dec 5, 2025", status: "Active", fee: "NPR 22,000" },
@@ -86,21 +87,47 @@ const adminProfile = {
 };
 
 type ActiveSection =
-  | "Dashboard"
-  | "User Management"
-  | "Courses"
-  | "Revenue & Finance"
-  | "Reports"
-  | "Trainers"
-  | "Schedule"
-  | "My Profile"
-  | "Settings";
+  | "Dashboard" | "User Management" | "Courses" | "Revenue & Finance"
+  | "Reports" | "Trainers" | "Schedule" | "My Profile" | "Settings";
 
 const AdminDashboard = () => {
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [showAddStudent, setShowAddStudent] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [viewStudent, setViewStudent] = useState<typeof initialStudents[0] | null>(null);
+  const [viewTrainer, setViewTrainer] = useState<typeof trainers[0] | null>(null);
+  const [editCourse, setEditCourse] = useState<typeof initialCourses[0] | null>(null);
+  const [editSchedule, setEditSchedule] = useState<typeof schedule[0] | null>(null);
+  const [editProfile, setEditProfile] = useState(false);
+  const [courses, setCourses] = useState(initialCourses);
+  const [allStudents, setAllStudents] = useState(initialStudents);
+  const [notifications] = useState([
+    { text: "New enrollment: Aaryan Thapa - Python", time: "10m ago", read: false },
+    { text: "Payment received: NPR 25,000", time: "1h ago", read: false },
+    { text: "Trainer report submitted by Sandip", time: "3h ago", read: true },
+  ]);
+  const [settingsToggles, setSettingsToggles] = useState<Record<string, boolean>>({
+    "Email Notifications": true, "SMS Alerts": true, "Two-Factor Auth": false, "Auto Backup": true,
+  });
+  const { toast } = useToast();
+
+  const filteredStudents = allStudents.filter(s =>
+    s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.course.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDeleteStudent = (name: string) => {
+    setAllStudents(prev => prev.filter(s => s.name !== name));
+    toast({ title: "Student Removed", description: `${name} has been removed.` });
+  };
+
+  const handleDeleteCourse = (name: string) => {
+    setCourses(prev => prev.filter(c => c.name !== name));
+    toast({ title: "Course Deleted", description: `${name} has been removed.` });
+  };
 
   const Sidebar = () => (
     <aside className={`${sidebarOpen ? "flex" : "hidden"} lg:flex w-64 flex-col border-r border-border bg-card p-4 fixed lg:static inset-y-0 left-0 z-50`}>
@@ -115,23 +142,16 @@ const AdminDashboard = () => {
       </div>
       <nav className="flex-1 space-y-1">
         {navItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={() => { setActive(item.label as ActiveSection); setSidebarOpen(false); }}
+          <button key={item.label} onClick={() => { setActive(item.label as ActiveSection); setSidebarOpen(false); }}
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
               active === item.label ? "gradient-primary font-medium text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-            }`}
-          >
+            }`}>
             <item.icon className="h-4 w-4" />
             {item.label}
           </button>
         ))}
       </nav>
-      <Link to="/">
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground mt-2">
-          <LogOut className="h-4 w-4" /> Sign Out
-        </Button>
-      </Link>
+      <Link to="/"><Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground mt-2"><LogOut className="h-4 w-4" /> Sign Out</Button></Link>
     </aside>
   );
 
@@ -146,15 +166,33 @@ const AdminDashboard = () => {
             <button className="lg:hidden" onClick={() => setSidebarOpen(true)}><Menu className="h-5 w-5 text-muted-foreground" /></button>
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input placeholder="Search..." className="w-48 rounded-lg border border-border bg-secondary/50 pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+              <input placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                className="w-48 rounded-lg border border-border bg-secondary/50 pl-9 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <button className="relative rounded-lg bg-secondary p-2 text-muted-foreground hover:text-foreground">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">3</span>
-            </button>
+            <div className="relative">
+              <button onClick={() => setShowNotifications(!showNotifications)} className="relative rounded-lg bg-secondary p-2 text-muted-foreground hover:text-foreground">
+                <Bell className="h-4 w-4" />
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">{notifications.filter(n => !n.read).length}</span>
+              </button>
+              <AnimatePresence>
+                {showNotifications && (
+                  <motion.div initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
+                    className="absolute right-0 top-12 w-72 rounded-xl border border-border bg-card shadow-xl z-50 p-3">
+                    <h4 className="font-display font-semibold text-foreground text-sm mb-2">Notifications</h4>
+                    {notifications.map((n, i) => (
+                      <div key={i} className={`rounded-lg p-2 mb-1 text-xs cursor-pointer hover:bg-secondary/50 ${!n.read ? "bg-primary/5" : ""}`}
+                        onClick={() => { setShowNotifications(false); toast({ title: "Notification", description: n.text }); }}>
+                        <p className={`${!n.read ? "text-foreground font-medium" : "text-muted-foreground"}`}>{n.text}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{n.time}</p>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
             <button onClick={() => setActive("My Profile")} className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-1.5 text-sm text-foreground hover:bg-secondary/80">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-3 w-3" /></div>
               <span className="hidden sm:inline">Admin</span>
@@ -172,7 +210,10 @@ const AdminDashboard = () => {
                   <p className="text-xs text-muted-foreground">Welcome back, here's what's happening today.</p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" className="border-border text-muted-foreground hidden sm:flex"><Download className="mr-1 h-3 w-3" /> Export</Button>
+                  <Button size="sm" variant="outline" className="border-border text-muted-foreground hidden sm:flex"
+                    onClick={() => toast({ title: "Export Started", description: "Dashboard data is being exported as CSV." })}>
+                    <Download className="mr-1 h-3 w-3" /> Export
+                  </Button>
                   <Button size="sm" className="gradient-primary border-0 text-primary-foreground" onClick={() => setShowAddCourse(true)}>
                     <Plus className="mr-1 h-3 w-3" /> Add Course
                   </Button>
@@ -181,7 +222,13 @@ const AdminDashboard = () => {
               <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((s, i) => (
                   <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    className={`rounded-xl border border-border bg-gradient-to-br ${s.color} p-5`}>
+                    className={`rounded-xl border border-border bg-gradient-to-br ${s.color} p-5 cursor-pointer hover:border-primary/30 transition-colors`}
+                    onClick={() => {
+                      if (s.label === "Total Revenue") setActive("Revenue & Finance");
+                      else if (s.label === "Total Students") setActive("User Management");
+                      else if (s.label === "Active Batches") setActive("Schedule");
+                      else setActive("Reports");
+                    }}>
                     <div className="mb-2 flex items-center justify-between">
                       <s.icon className="h-5 w-5 text-primary" />
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{s.change}</span>
@@ -196,8 +243,9 @@ const AdminDashboard = () => {
                   <h3 className="mb-4 font-display font-semibold text-foreground">Revenue Growth (Monthly)</h3>
                   <div className="flex h-40 items-end gap-1">
                     {[40, 55, 45, 70, 60, 80, 75, 90, 85, 95, 88, 100].map((h, i) => (
-                      <div key={i} className="flex flex-1 flex-col items-center gap-1">
-                        <div className="w-full rounded-t bg-primary/60 hover:bg-primary transition-colors" style={{ height: `${h}%` }} />
+                      <div key={i} className="flex flex-1 flex-col items-center gap-1 cursor-pointer group"
+                        onClick={() => toast({ title: `${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][i]} Revenue`, description: `NPR ${(h * 1250).toLocaleString()}` })}>
+                        <div className="w-full rounded-t bg-primary/60 group-hover:bg-primary transition-colors" style={{ height: `${h}%` }} />
                         <span className="text-[8px] text-muted-foreground">{["J","F","M","A","M","J","J","A","S","O","N","D"][i]}</span>
                       </div>
                     ))}
@@ -207,7 +255,8 @@ const AdminDashboard = () => {
                   <h3 className="mb-4 font-display font-semibold text-foreground">Enrollment Distribution</h3>
                   <div className="space-y-3">
                     {enrollmentDistribution.map((item) => (
-                      <div key={item.name}>
+                      <div key={item.name} className="cursor-pointer hover:bg-secondary/20 rounded-lg p-1 transition-colors"
+                        onClick={() => { setActive("Courses"); toast({ title: item.name, description: `${item.percent}% of total enrollments` }); }}>
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-xs text-muted-foreground">{item.name}</span>
                           <span className="text-xs font-medium text-foreground">{item.percent}%</span>
@@ -227,23 +276,18 @@ const AdminDashboard = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-3 font-medium">Student</th>
-                        <th className="pb-3 font-medium">Course</th>
-                        <th className="pb-3 font-medium">Date</th>
-                        <th className="pb-3 font-medium">Amount</th>
-                        <th className="pb-3 font-medium">Status</th>
+                        <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentTransactions.map((t) => (
-                        <tr key={t.name} className="border-b border-border/50 last:border-0">
+                        <tr key={t.name} className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/20"
+                          onClick={() => toast({ title: `Transaction: ${t.name}`, description: `${t.amount} for ${t.course} - ${t.status}` })}>
                           <td className="py-3"><div className="font-medium text-foreground">{t.name}</div><div className="text-[10px] text-muted-foreground">{t.email}</div></td>
                           <td className="py-3 text-muted-foreground text-xs">{t.course}</td>
                           <td className="py-3 text-muted-foreground text-xs">{t.date}</td>
                           <td className="py-3 font-medium text-foreground text-xs">{t.amount}</td>
-                          <td className="py-3">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span>
-                          </td>
+                          <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -264,45 +308,46 @@ const AdminDashboard = () => {
               </div>
               <div className="mb-4 grid gap-4 sm:grid-cols-3">
                 {[
-                  { label: "Total Students", value: "1,420", icon: Users, color: "text-blue-400" },
+                  { label: "Total Students", value: allStudents.length.toString(), icon: Users, color: "text-blue-400" },
                   { label: "Active Trainers", value: "5", icon: UserPlus, color: "text-primary" },
                   { label: "Admins", value: "2", icon: Award, color: "text-yellow-400" },
                 ].map((s) => (
-                  <div key={s.label} className="gradient-card rounded-xl border border-border p-4 flex items-center gap-4">
+                  <div key={s.label} className="gradient-card rounded-xl border border-border p-4 flex items-center gap-4 cursor-pointer hover:border-primary/30 transition-colors"
+                    onClick={() => { if (s.label === "Active Trainers") setActive("Trainers"); }}>
                     <s.icon className={`h-8 w-8 ${s.color}`} />
                     <div><p className="text-xs text-muted-foreground">{s.label}</p><p className="font-display text-2xl font-bold text-foreground">{s.value}</p></div>
                   </div>
                 ))}
               </div>
               <div className="gradient-card rounded-xl border border-border p-5">
-                <h3 className="mb-4 font-display font-semibold text-foreground">All Students</h3>
+                <div className="mb-4 flex items-center justify-between">
+                  <h3 className="font-display font-semibold text-foreground">All Students</h3>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                    <input placeholder="Filter students..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                      className="w-40 rounded-lg border border-border bg-secondary/50 pl-7 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
+                  </div>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-3 font-medium">Name</th>
-                        <th className="pb-3 font-medium">Course</th>
-                        <th className="pb-3 font-medium">Enrolled</th>
-                        <th className="pb-3 font-medium">Fee Paid</th>
-                        <th className="pb-3 font-medium">Status</th>
-                        <th className="pb-3 font-medium">Actions</th>
+                        <th className="pb-3 font-medium">Name</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Enrolled</th><th className="pb-3 font-medium">Fee Paid</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {allStudents.map((s) => (
-                        <tr key={s.name} className="border-b border-border/50 last:border-0">
+                      {filteredStudents.map((s) => (
+                        <tr key={s.name} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
                           <td className="py-3"><div className="font-medium text-foreground">{s.name}</div><div className="text-[10px] text-muted-foreground">{s.email}</div></td>
                           <td className="py-3 text-muted-foreground text-xs">{s.course}</td>
                           <td className="py-3 text-muted-foreground text-xs">{s.enrolled}</td>
                           <td className="py-3 text-xs font-medium text-foreground">{s.fee}</td>
-                          <td className="py-3">
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${s.status === "Active" ? "bg-emerald-500/10 text-emerald-400" : "bg-primary/10 text-primary"}`}>{s.status}</span>
-                          </td>
+                          <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${s.status === "Active" ? "bg-emerald-500/10 text-emerald-400" : "bg-primary/10 text-primary"}`}>{s.status}</span></td>
                           <td className="py-3">
                             <div className="flex gap-1">
-                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"><Eye className="h-3 w-3" /></button>
-                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"><Edit className="h-3 w-3" /></button>
-                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary"><Trash2 className="h-3 w-3" /></button>
+                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={() => setViewStudent(s)}><Eye className="h-3 w-3" /></button>
+                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={() => toast({ title: "Edit Student", description: `Editing ${s.name}'s details` })}><Edit className="h-3 w-3" /></button>
+                              <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary" onClick={() => handleDeleteStudent(s.name)}><Trash2 className="h-3 w-3" /></button>
                             </div>
                           </td>
                         </tr>
@@ -326,7 +371,7 @@ const AdminDashboard = () => {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {courses.map((c, i) => (
                   <motion.div key={c.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                    className="gradient-card rounded-xl border border-border p-5">
+                    className="gradient-card rounded-xl border border-border p-5 hover:border-primary/30 transition-colors">
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="font-display font-semibold text-foreground text-sm">{c.name}</h3>
                       <span className="rounded-full bg-emerald-500/10 text-emerald-400 px-2 py-0.5 text-[10px] font-medium">{c.status}</span>
@@ -338,13 +383,10 @@ const AdminDashboard = () => {
                       <p>💰 Fee: <span className="text-primary font-medium">{c.fee}</span></p>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                        <span className="text-xs font-medium text-foreground">{c.rating}</span>
-                      </div>
+                      <div className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-400 fill-yellow-400" /><span className="text-xs font-medium text-foreground">{c.rating}</span></div>
                       <div className="flex gap-1">
-                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"><Edit className="h-3 w-3" /></button>
-                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary"><Trash2 className="h-3 w-3" /></button>
+                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={() => setEditCourse(c)}><Edit className="h-3 w-3" /></button>
+                        <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary" onClick={() => handleDeleteCourse(c.name)}><Trash2 className="h-3 w-3" /></button>
                       </div>
                     </div>
                   </motion.div>
@@ -358,7 +400,10 @@ const AdminDashboard = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="mb-6 flex items-center justify-between">
                 <h1 className="font-display text-xl font-bold text-foreground">Revenue & Finance</h1>
-                <Button size="sm" variant="outline" className="border-border text-muted-foreground"><Download className="mr-1 h-3 w-3" /> Export</Button>
+                <Button size="sm" variant="outline" className="border-border text-muted-foreground"
+                  onClick={() => toast({ title: "Exporting Finance Data", description: "Your finance report is being generated as PDF." })}>
+                  <Download className="mr-1 h-3 w-3" /> Export
+                </Button>
               </div>
               <div className="mb-6 grid gap-4 sm:grid-cols-3">
                 {[
@@ -367,10 +412,7 @@ const AdminDashboard = () => {
                   { label: "Pending Fees", value: "NPR 45,000", icon: AlertCircle, change: "4 Students", color: "text-yellow-400" },
                 ].map((s) => (
                   <div key={s.label} className="gradient-card rounded-xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-2">
-                      <s.icon className={`h-5 w-5 ${s.color}`} />
-                      <span className="text-[10px] text-primary font-medium">{s.change}</span>
-                    </div>
+                    <div className="flex items-center justify-between mb-2"><s.icon className={`h-5 w-5 ${s.color}`} /><span className="text-[10px] text-primary font-medium">{s.change}</span></div>
                     <div className="font-display text-xl font-bold text-foreground">{s.value}</div>
                     <div className="text-xs text-muted-foreground">{s.label}</div>
                   </div>
@@ -382,23 +424,19 @@ const AdminDashboard = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-3 font-medium">Student</th>
-                        <th className="pb-3 font-medium">Course</th>
-                        <th className="pb-3 font-medium">Date</th>
-                        <th className="pb-3 font-medium">Amount</th>
-                        <th className="pb-3 font-medium">Status</th>
-                        <th className="pb-3 font-medium">Receipt</th>
+                        <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Receipt</th>
                       </tr>
                     </thead>
                     <tbody>
                       {recentTransactions.map((t) => (
-                        <tr key={t.name} className="border-b border-border/50 last:border-0">
+                        <tr key={t.name} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
                           <td className="py-3"><div className="font-medium text-foreground">{t.name}</div><div className="text-[10px] text-muted-foreground">{t.email}</div></td>
                           <td className="py-3 text-muted-foreground text-xs">{t.course}</td>
                           <td className="py-3 text-muted-foreground text-xs">{t.date}</td>
                           <td className="py-3 font-medium text-foreground text-xs">{t.amount}</td>
                           <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span></td>
-                          <td className="py-3"><button className="text-xs text-primary hover:underline flex items-center gap-1"><Download className="h-3 w-3" /> PDF</button></td>
+                          <td className="py-3"><button className="text-xs text-primary hover:underline flex items-center gap-1"
+                            onClick={() => toast({ title: "Receipt Downloaded", description: `Receipt for ${t.name} - ${t.amount}` })}><Download className="h-3 w-3" /> PDF</button></td>
                         </tr>
                       ))}
                     </tbody>
@@ -426,7 +464,8 @@ const AdminDashboard = () => {
                     <r.icon className="h-6 w-6 text-primary mb-3" />
                     <h3 className="font-display font-semibold text-foreground text-sm mb-1">{r.title}</h3>
                     <p className="text-xs text-muted-foreground mb-4">{r.desc}</p>
-                    <Button size="sm" variant="outline" className="w-full border-border text-muted-foreground text-xs">
+                    <Button size="sm" variant="outline" className="w-full border-border text-muted-foreground text-xs"
+                      onClick={() => toast({ title: "Downloading Report", description: `${r.title} is being generated as PDF.` })}>
                       <Download className="mr-1 h-3 w-3" /> Download
                     </Button>
                   </motion.div>
@@ -440,20 +479,18 @@ const AdminDashboard = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="mb-6 flex items-center justify-between">
                 <h1 className="font-display text-xl font-bold text-foreground">Trainer Management</h1>
-                <Button size="sm" className="gradient-primary border-0 text-primary-foreground"><Plus className="mr-1 h-3 w-3" /> Add Trainer</Button>
+                <Button size="sm" className="gradient-primary border-0 text-primary-foreground"
+                  onClick={() => toast({ title: "Add Trainer", description: "Trainer registration form coming soon." })}>
+                  <Plus className="mr-1 h-3 w-3" /> Add Trainer
+                </Button>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {trainers.map((t, i) => (
                   <motion.div key={t.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                    className="gradient-card rounded-xl border border-border p-5">
+                    className="gradient-card rounded-xl border border-border p-5 hover:border-primary/30 transition-colors">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold">
-                        {t.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-display font-semibold text-foreground text-sm">{t.name}</h3>
-                        <p className="text-xs text-muted-foreground">{t.course}</p>
-                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-primary font-bold">{t.name.charAt(0)}</div>
+                      <div><h3 className="font-display font-semibold text-foreground text-sm">{t.name}</h3><p className="text-xs text-muted-foreground">{t.course}</p></div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center mb-3">
                       <div><p className="text-xs font-bold text-foreground">{t.students}</p><p className="text-[10px] text-muted-foreground">Students</p></div>
@@ -461,8 +498,11 @@ const AdminDashboard = () => {
                       <div><p className="text-xs font-bold text-foreground">{t.experience}</p><p className="text-[10px] text-muted-foreground">Exp.</p></div>
                     </div>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="outline" className="flex-1 text-xs border-border"><Eye className="mr-1 h-3 w-3" />View</Button>
-                      <Button size="sm" variant="outline" className="flex-1 text-xs border-border"><Edit className="mr-1 h-3 w-3" />Edit</Button>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs border-border" onClick={() => setViewTrainer(t)}><Eye className="mr-1 h-3 w-3" />View</Button>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs border-border"
+                        onClick={() => toast({ title: "Edit Trainer", description: `Editing ${t.name}'s profile` })}>
+                        <Edit className="mr-1 h-3 w-3" />Edit
+                      </Button>
                     </div>
                   </motion.div>
                 ))}
@@ -475,27 +515,30 @@ const AdminDashboard = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="mb-6 flex items-center justify-between">
                 <h1 className="font-display text-xl font-bold text-foreground">Class Schedule</h1>
-                <Button size="sm" className="gradient-primary border-0 text-primary-foreground"><Plus className="mr-1 h-3 w-3" /> Add Class</Button>
+                <Button size="sm" className="gradient-primary border-0 text-primary-foreground"
+                  onClick={() => toast({ title: "Add Class", description: "New class scheduling form coming soon." })}>
+                  <Plus className="mr-1 h-3 w-3" /> Add Class
+                </Button>
               </div>
               <div className="space-y-4">
                 {schedule.map((s, i) => (
                   <motion.div key={s.course} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
-                    className="gradient-card rounded-xl border border-border p-4 flex flex-wrap items-center gap-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
-                      <Calendar className="h-5 w-5 text-primary" />
-                    </div>
+                    className="gradient-card rounded-xl border border-border p-4 flex flex-wrap items-center gap-4 hover:border-primary/30 transition-colors">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20"><Calendar className="h-5 w-5 text-primary" /></div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-display font-semibold text-foreground text-sm">{s.course}</h3>
                       <p className="text-xs text-muted-foreground">{s.trainer} • {s.batch}</p>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      <p>📅 {s.day}</p>
-                      <p>🕐 {s.time}</p>
-                      <p>🏛️ {s.room}</p>
+                      <p>📅 {s.day}</p><p>🕐 {s.time}</p><p>🏛️ {s.room}</p>
                     </div>
                     <div className="flex gap-1">
-                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"><Edit className="h-3 w-3" /></button>
-                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-primary"><Trash2 className="h-3 w-3" /></button>
+                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground"
+                        onClick={() => setEditSchedule(s)}><Edit className="h-3 w-3" /></button>
+                      <button className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-primary"
+                        onClick={() => toast({ title: "Schedule Removed", description: `${s.course} has been removed from schedule.` })}>
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </div>
                   </motion.div>
                 ))}
@@ -509,14 +552,12 @@ const AdminDashboard = () => {
               <h1 className="font-display text-xl font-bold text-foreground mb-6">My Profile</h1>
               <div className="grid gap-6 lg:grid-cols-3">
                 <div className="gradient-card rounded-xl border border-border p-6 text-center">
-                  <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary">
-                    <User className="h-10 w-10" />
-                  </div>
+                  <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-10 w-10" /></div>
                   <h2 className="font-display font-bold text-foreground text-lg">{adminProfile.name}</h2>
                   <p className="text-sm text-muted-foreground mb-2">{adminProfile.role}</p>
                   <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">Administrator</span>
                   <div className="mt-4">
-                    <Button size="sm" className="gradient-primary border-0 text-primary-foreground w-full">Edit Profile</Button>
+                    <Button size="sm" className="gradient-primary border-0 text-primary-foreground w-full" onClick={() => setEditProfile(true)}>Edit Profile</Button>
                   </div>
                 </div>
                 <div className="lg:col-span-2 space-y-4">
@@ -540,9 +581,7 @@ const AdminDashboard = () => {
                     <h3 className="font-display font-semibold text-foreground mb-3">Permissions</h3>
                     <div className="flex flex-wrap gap-2">
                       {adminProfile.permissions.map((p) => (
-                        <span key={p} className="flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">
-                          <CheckCircle className="h-3 w-3" /> {p}
-                        </span>
+                        <span key={p} className="flex items-center gap-1 rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium"><CheckCircle className="h-3 w-3" /> {p}</span>
                       ))}
                     </div>
                   </div>
@@ -550,12 +589,10 @@ const AdminDashboard = () => {
                     <h3 className="font-display font-semibold text-foreground mb-3">Change Password</h3>
                     <div className="space-y-3">
                       {["Current Password", "New Password", "Confirm New Password"].map((label) => (
-                        <div key={label}>
-                          <label className="text-xs text-muted-foreground">{label}</label>
-                          <input type="password" className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
-                        </div>
+                        <div key={label}><label className="text-xs text-muted-foreground">{label}</label><input type="password" className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
                       ))}
-                      <Button size="sm" className="gradient-primary border-0 text-primary-foreground">Update Password</Button>
+                      <Button size="sm" className="gradient-primary border-0 text-primary-foreground"
+                        onClick={() => toast({ title: "Password Updated", description: "Your password has been changed successfully." })}>Update Password</Button>
                     </div>
                   </div>
                 </div>
@@ -575,23 +612,28 @@ const AdminDashboard = () => {
                   { title: "Backup & Export", desc: "Database backups and data export", icon: Download },
                 ].map((s, i) => (
                   <motion.div key={s.title} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-                    className="gradient-card rounded-xl border border-border p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                      <s.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-display font-semibold text-foreground text-sm">{s.title}</h3>
-                      <p className="text-xs text-muted-foreground">{s.desc}</p>
-                    </div>
+                    className="gradient-card rounded-xl border border-border p-4 flex items-center gap-4 cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => toast({ title: s.title, description: `${s.desc} — Opening settings panel...` })}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10"><s.icon className="h-5 w-5 text-primary" /></div>
+                    <div className="flex-1"><h3 className="font-display font-semibold text-foreground text-sm">{s.title}</h3><p className="text-xs text-muted-foreground">{s.desc}</p></div>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </motion.div>
                 ))}
                 <div className="gradient-card rounded-xl border border-border p-5">
                   <h3 className="font-display font-semibold text-foreground mb-4">Theme</h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">Toggle between light and dark mode:</span>
-                    <ThemeToggle />
-                  </div>
+                  <div className="flex items-center gap-3"><span className="text-sm text-muted-foreground">Toggle between light and dark mode:</span><ThemeToggle /></div>
+                </div>
+                <div className="gradient-card rounded-xl border border-border p-5">
+                  <h3 className="font-display font-semibold text-foreground mb-3">Quick Toggles</h3>
+                  {Object.entries(settingsToggles).map(([key, val]) => (
+                    <div key={key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                      <span className="text-sm text-foreground">{key}</span>
+                      <button onClick={() => { setSettingsToggles(prev => ({ ...prev, [key]: !prev[key] })); toast({ title: key, description: `${key} has been ${!val ? "enabled" : "disabled"}.` }); }}
+                        className={`w-10 h-5 rounded-full border relative transition-colors ${val ? "bg-primary/20 border-primary/30" : "bg-secondary border-border"}`}>
+                        <div className={`absolute top-0.5 h-4 w-4 rounded-full transition-all ${val ? "right-0.5 bg-primary" : "left-0.5 bg-muted-foreground"}`} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
             </motion.div>
@@ -599,52 +641,147 @@ const AdminDashboard = () => {
         </div>
       </main>
 
-      {/* Add Course Modal */}
+      {/* MODALS */}
       <AnimatePresence>
         {showAddCourse && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display font-bold text-foreground">Add New Course</h2>
-                <button onClick={() => setShowAddCourse(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowAddCourse(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Add New Course</h2><button onClick={() => setShowAddCourse(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
               <div className="space-y-3">
                 {["Course Name", "Trainer Name", "Course Fee (NPR)", "Duration (weeks)", "Max Students"].map((label) => (
-                  <div key={label}>
-                    <label className="text-xs text-muted-foreground">{label}</label>
-                    <input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
+                  <div key={label}><label className="text-xs text-muted-foreground">{label}</label><input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
                 ))}
               </div>
               <div className="mt-4 flex gap-2">
-                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => setShowAddCourse(false)}>Add Course</Button>
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => { setShowAddCourse(false); toast({ title: "Course Added", description: "New course has been added successfully." }); }}>Add Course</Button>
                 <Button variant="outline" className="flex-1 border-border" onClick={() => setShowAddCourse(false)}>Cancel</Button>
               </div>
             </motion.div>
           </motion.div>
         )}
+
         {showAddStudent && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card border border-border rounded-xl p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display font-bold text-foreground">Add New Student</h2>
-                <button onClick={() => setShowAddStudent(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
-              </div>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowAddStudent(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Add New Student</h2><button onClick={() => setShowAddStudent(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
               <div className="space-y-3">
                 {["Full Name", "Email Address", "Phone Number", "Course Enrolled", "Fee Amount (NPR)"].map((label) => (
-                  <div key={label}>
-                    <label className="text-xs text-muted-foreground">{label}</label>
-                    <input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
+                  <div key={label}><label className="text-xs text-muted-foreground">{label}</label><input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
                 ))}
               </div>
               <div className="mt-4 flex gap-2">
-                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => setShowAddStudent(false)}>Add Student</Button>
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => { setShowAddStudent(false); toast({ title: "Student Added", description: "New student enrolled successfully." }); }}>Add Student</Button>
                 <Button variant="outline" className="flex-1 border-border" onClick={() => setShowAddStudent(false)}>Cancel</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {viewStudent && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setViewStudent(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Student Details</h2><button onClick={() => setViewStudent(null)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary text-lg font-bold">{viewStudent.name.charAt(0)}</div>
+                <div><p className="font-bold text-foreground">{viewStudent.name}</p><p className="text-xs text-muted-foreground">{viewStudent.email}</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Course", value: viewStudent.course },
+                  { label: "Enrolled", value: viewStudent.enrolled },
+                  { label: "Fee", value: viewStudent.fee },
+                  { label: "Status", value: viewStudent.status },
+                ].map(d => (
+                  <div key={d.label} className="rounded-lg bg-secondary/30 p-3"><p className="text-[10px] text-muted-foreground uppercase">{d.label}</p><p className="text-sm font-medium text-foreground mt-1">{d.value}</p></div>
+                ))}
+              </div>
+              <Button className="w-full mt-4 gradient-primary border-0 text-primary-foreground" onClick={() => setViewStudent(null)}>Close</Button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {viewTrainer && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setViewTrainer(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Trainer Details</h2><button onClick={() => setViewTrainer(null)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-primary text-lg font-bold">{viewTrainer.name.charAt(0)}</div>
+                <div><p className="font-bold text-foreground">{viewTrainer.name}</p><p className="text-xs text-muted-foreground">{viewTrainer.course} Trainer</p></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Students", value: viewTrainer.students.toString() },
+                  { label: "Rating", value: `${viewTrainer.rating} ⭐` },
+                  { label: "Experience", value: viewTrainer.experience },
+                  { label: "Status", value: viewTrainer.status },
+                ].map(d => (
+                  <div key={d.label} className="rounded-lg bg-secondary/30 p-3"><p className="text-[10px] text-muted-foreground uppercase">{d.label}</p><p className="text-sm font-medium text-foreground mt-1">{d.value}</p></div>
+                ))}
+              </div>
+              <Button className="w-full mt-4 gradient-primary border-0 text-primary-foreground" onClick={() => setViewTrainer(null)}>Close</Button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {editCourse && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setEditCourse(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Edit Course</h2><button onClick={() => setEditCourse(null)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="space-y-3">
+                {[
+                  { label: "Course Name", value: editCourse.name },
+                  { label: "Trainer", value: editCourse.trainer },
+                  { label: "Fee", value: editCourse.fee },
+                ].map(f => (
+                  <div key={f.label}><label className="text-xs text-muted-foreground">{f.label}</label><input defaultValue={f.value} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
+                ))}
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => { setEditCourse(null); toast({ title: "Course Updated", description: `${editCourse.name} has been updated.` }); }}>Save Changes</Button>
+                <Button variant="outline" className="flex-1 border-border" onClick={() => setEditCourse(null)}>Cancel</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {editSchedule && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setEditSchedule(null)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Edit Schedule</h2><button onClick={() => setEditSchedule(null)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="space-y-3">
+                {[
+                  { label: "Course", value: editSchedule.course },
+                  { label: "Days", value: editSchedule.day },
+                  { label: "Time", value: editSchedule.time },
+                  { label: "Room", value: editSchedule.room },
+                ].map(f => (
+                  <div key={f.label}><label className="text-xs text-muted-foreground">{f.label}</label><input defaultValue={f.value} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
+                ))}
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => { setEditSchedule(null); toast({ title: "Schedule Updated", description: `${editSchedule.course} schedule has been updated.` }); }}>Save Changes</Button>
+                <Button variant="outline" className="flex-1 border-border" onClick={() => setEditSchedule(null)}>Cancel</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {editProfile && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setEditProfile(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Edit Profile</h2><button onClick={() => setEditProfile(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="space-y-3">
+                {[
+                  { label: "Full Name", value: adminProfile.name },
+                  { label: "Email", value: adminProfile.email },
+                  { label: "Phone", value: adminProfile.phone },
+                ].map(f => (
+                  <div key={f.label}><label className="text-xs text-muted-foreground">{f.label}</label><input defaultValue={f.value} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
+                ))}
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={() => { setEditProfile(false); toast({ title: "Profile Updated", description: "Your profile has been updated successfully." }); }}>Save Changes</Button>
+                <Button variant="outline" className="flex-1 border-border" onClick={() => setEditProfile(false)}>Cancel</Button>
               </div>
             </motion.div>
           </motion.div>
