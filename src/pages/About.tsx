@@ -4,14 +4,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SectionWrapper from "@/components/SectionWrapper";
 import aboutBg from "@/assets/about-bg.jpg";
-import trainer1 from "@/assets/trainer-1.jpg";
-import trainer2 from "@/assets/trainer-2.jpg";
+import navinGurung from "@/assets/navin-gurung.png";
+import laxmiKathariya from "@/assets/laxmi-kathariya.jpg";
 
 const team = [
-  { name: "Rajesh Adhikari", role: "Founder & CEO", bio: "15+ years in IT education. Former Microsoft certified trainer.", img: trainer1 },
-  { name: "Sita Gurung", role: "Head of Training", bio: "AWS Solutions Architect. Led training for 3000+ students.", img: trainer2 },
-  { name: "Bikash Thapa", role: "Lead Instructor - Development", bio: "Full Stack Developer. Ex-Google, contributed to open source.", img: trainer1 },
-  { name: "Anisha Rai", role: "Lead Instructor - Data Science", bio: "PhD in AI/ML. Published researcher and industry consultant.", img: trainer2 },
+  { name: "Navin Gurung", role: "Trainer", bio: "Dedicated IT trainer with expertise in practical, hands-on technology education.", img: navinGurung },
+  { name: "Laxmi Kathariya", role: "Trainer", bio: "Passionate educator focused on empowering students with digital skills and career readiness.", img: laxmiKathariya },
 ];
 
 const About = () => (
@@ -87,7 +85,7 @@ const About = () => (
         Led by <span className="text-gradient">Industry Veterans</span>
       </h2>
       <p className="mx-auto mb-12 max-w-xl text-center text-muted-foreground">Our trainers bring real-world experience from leading tech companies.</p>
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-2 max-w-2xl mx-auto">
         {team.map((t, i) => (
           <motion.div
             key={t.name}
