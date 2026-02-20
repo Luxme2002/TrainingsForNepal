@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, BookOpen, Calendar, Clock, GraduationCap, LogOut, FileText, Settings,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const myCourses = [
   { title: "Basic to Intermediate Python", students: 42, progress: 65, tag: "IN PROGRESS", color: "bg-primary", nextLesson: "OOP Concepts", rating: 4.9 },
@@ -68,6 +69,8 @@ const trainerProfile = {
 type ActiveSection = "Dashboard" | "My Courses" | "Students" | "Schedule" | "Grading" | "Resources" | "Messages" | "My Profile" | "Settings";
 
 const TrainerDashboard = () => {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [gradingStudent, setGradingStudent] = useState<string | null>(null);
@@ -134,13 +137,7 @@ const TrainerDashboard = () => {
           </button>
         ))}
       </nav>
-      <div className="mt-auto flex items-center gap-3 rounded-lg bg-secondary/30 p-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-primary"><Users className="h-4 w-4" /></div>
-        <div>
-          <p className="text-sm font-medium text-foreground">{trainerProfile.name}</p>
-          <button onClick={() => setActive("My Profile")} className="text-[10px] text-primary hover:underline">View Profile</button>
-        </div>
-      </div>
+      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground mt-2" onClick={async () => { await signOut(); navigate("/login"); }}><LogOut className="h-4 w-4" /> Sign Out</Button>
     </aside>
   );
 

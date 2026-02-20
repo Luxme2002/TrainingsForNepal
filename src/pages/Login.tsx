@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap, Mail, Lock, User, Eye, EyeOff, Shield, BookOpen, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type Role = "student" | "trainer" | "admin";
 
@@ -23,11 +25,50 @@ const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>("student");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate(dashboardRoutes[selectedRole]);
+    setLoading(true);
+
+    try {
+      if (isSignup) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: fullName, role: selectedRole },
+            emailRedirectTo: window.location.origin,
+          },
+        });
+        if (error) throw error;
+        toast({ title: "Account created!", description: "Please check your email to verify your account." });
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+
+        // Get user role from profile
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("user_id", user.id)
+            .single();
+          const role = (profile?.role as Role) ?? "student";
+          navigate(dashboardRoutes[role]);
+        }
+      }
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -57,44 +98,61 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Role Selection */}
-          <div className="mb-5">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">Continue as a</p>
-            <div className="grid grid-cols-3 gap-2">
-              {roles.map((role) => (
-                <button
-                  key={role.key}
-                  type="button"
-                  onClick={() => setSelectedRole(role.key)}
-                  className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition-all ${
-                    selectedRole === role.key
-                      ? `${role.color} border-2`
-                      : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
-                  }`}
-                >
-                  <role.icon className="h-4 w-4" />
-                  {role.label}
-                </button>
-              ))}
+          {/* Role Selection - only on signup */}
+          {isSignup && (
+            <div className="mb-5">
+              <p className="mb-2 text-xs font-medium text-muted-foreground">Sign up as</p>
+              <div className="grid grid-cols-3 gap-2">
+                {roles.map((role) => (
+                  <button
+                    key={role.key}
+                    type="button"
+                    onClick={() => setSelectedRole(role.key)}
+                    className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-xs font-medium transition-all ${
+                      selectedRole === role.key
+                        ? `${role.color} border-2`
+                        : "border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/60"
+                    }`}
+                  >
+                    <role.icon className="h-4 w-4" />
+                    {role.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             {isSignup && (
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Full Name" className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground" />
+                <Input
+                  placeholder="Full Name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground"
+                />
               </div>
             )}
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Email or Username" type="email" className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground" />
+              <Input
+                placeholder="Email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-border bg-secondary/50 pl-10 text-foreground placeholder:text-muted-foreground"
+              />
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Password"
                 type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
                 className="border-border bg-secondary/50 pl-10 pr-10 text-foreground placeholder:text-muted-foreground"
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -102,31 +160,10 @@ const Login = () => {
               </button>
             </div>
 
-            {!isSignup && (
-              <div className="text-right">
-                <a href="#" className="text-xs text-primary hover:underline">Forgot password?</a>
-              </div>
-            )}
-
-            <Button type="submit" className="w-full gradient-primary border-0 text-primary-foreground glow-red-sm hover:opacity-90">
-              {isSignup ? "Create Account" : "Sign In to Dashboard"}
+            <Button type="submit" disabled={loading} className="w-full gradient-primary border-0 text-primary-foreground glow-red-sm hover:opacity-90">
+              {loading ? "Please wait..." : isSignup ? "Create Account" : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-4 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">OR CONTINUE WITH</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3">
-            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground">
-              Google
-            </Button>
-            <Button variant="outline" className="border-border text-muted-foreground hover:text-foreground">
-              LinkedIn
-            </Button>
-          </div>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">
             {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Clock, Award, GraduationCap, LogOut, Calendar, FileText,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const enrolledCourses = [
   { title: "Basic to Intermediate Python", progress: 65, lessons: "42/65 Lessons", instructor: "Sandip Lamichhane", icon: "🐍", nextLesson: "OOP Concepts", deadline: "Mar 10, 2026" },
@@ -59,6 +60,8 @@ const studentProfile = {
 type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "My Profile" | "Settings" | "Help Center";
 
 const StudentDashboard = () => {
+  const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -127,7 +130,7 @@ const StudentDashboard = () => {
           ))}
         </div>
       </nav>
-      <Link to="/"><Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground mt-2"><LogOut className="h-4 w-4" />Sign Out</Button></Link>
+      <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground mt-2" onClick={async () => { await signOut(); navigate("/login"); }}><LogOut className="h-4 w-4" />Sign Out</Button>
     </aside>
   );
 
