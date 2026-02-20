@@ -88,18 +88,20 @@ const Contact = () => {
         </div>
       </SectionWrapper>
 
-      {/* Map */}
+      {/* Google Link */}
       <section className="border-t border-border">
-        <iframe
-          title="Together for Nepal Location"
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3532.3!2d85.319!3d27.705!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMjfCsDQyJzE4LjAiTiA4NcKwMTknMDguNiJF!5e0!3m2!1sen!2snp!4v1"
-          width="100%"
-          height="400"
-          style={{ border: 0 }}
-          allowFullScreen
-          loading="lazy"
-          className="grayscale"
-        />
+        <div className="container mx-auto px-4 py-12 text-center lg:px-8">
+          <h3 className="mb-4 font-display text-xl font-semibold text-foreground">Find Us Online</h3>
+          <a
+            href="https://share.google/Di1nAqsYT1Ssyojuq"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-6 py-3 text-sm font-medium text-primary transition-colors hover:bg-primary/20"
+          >
+            <MapPin className="h-4 w-4" />
+            View on Google
+          </a>
+        </div>
       </section>
 
       <Footer />

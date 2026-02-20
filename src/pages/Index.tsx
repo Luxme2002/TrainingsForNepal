@@ -6,14 +6,12 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SectionWrapper from "@/components/SectionWrapper";
 import heroBg from "@/assets/hero-bg.jpg";
-import trainer1 from "@/assets/trainer-1.jpg";
-import trainer2 from "@/assets/trainer-2.jpg";
+import navinGurung from "@/assets/navin-gurung.png";
+import laxmiKathariya from "@/assets/laxmi-kathariya.jpg";
 
 const stats = [
-  { value: "5K+", label: "Students Trained" },
   { value: "98%", label: "Placement Rate" },
-  { value: "50+", label: "Expert Trainers" },
-  { value: "100+", label: "Courses Offered" },
+  { value: "10+", label: "Courses Offered" },
 ];
 
 const courses = [
@@ -25,8 +23,8 @@ const courses = [
 ];
 
 const testimonials = [
-  { name: "Aarav Shrestha", role: "Full Stack Developer at Fusemachines", text: "Trainings for Nepal transformed my career. The hands-on approach and industry-relevant curriculum gave me the skills to land my dream job.", avatar: trainer1 },
-  { name: "Priya Maharjan", role: "Cloud Engineer at Deerwalk", text: "The training was exceptional. The instructors are experienced professionals who make complex concepts easy to understand.", avatar: trainer2 },
+  { name: "Aarav Shrestha", role: "Full Stack Developer at Fusemachines", text: "Trainings for Nepal transformed my career. The hands-on approach and industry-relevant curriculum gave me the skills to land my dream job.", avatar: navinGurung },
+  { name: "Priya Maharjan", role: "Cloud Engineer at Deerwalk", text: "The training was exceptional. The instructors are experienced professionals who make complex concepts easy to understand.", avatar: laxmiKathariya },
 ];
 
 const Index = () => {
@@ -87,7 +85,7 @@ const Index = () => {
 
       {/* Stats */}
       <section className="border-y border-border bg-card/50">
-        <div className="container mx-auto grid grid-cols-2 gap-6 px-4 py-12 lg:grid-cols-4 lg:px-8">
+        <div className="container mx-auto grid grid-cols-2 gap-6 px-4 py-12 lg:px-8">
           {stats.map((s, i) => (
             <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center">
               <div className="font-display text-3xl font-bold text-gradient sm:text-4xl">{s.value}</div>
