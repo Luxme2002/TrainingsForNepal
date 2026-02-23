@@ -6,8 +6,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import SectionWrapper from "@/components/SectionWrapper";
 import heroBg from "@/assets/hero-bg.jpg";
-import navinGurung from "@/assets/navin-gurung.png";
-import laxmiKathariya from "@/assets/laxmi-kathariya.jpg";
 
 const stats = [
   { value: "98%", label: "Placement Rate" },
@@ -22,10 +20,6 @@ const courses = [
   { icon: Users, title: "Professional Development", desc: "Soft skills, project management, leadership training, interview prep, and workplace readiness.", tag: "Career Boost" },
 ];
 
-const testimonials = [
-  { name: "Aarav Shrestha", role: "Full Stack Developer at Fusemachines", text: "Trainings for Nepal transformed my career. The hands-on approach and industry-relevant curriculum gave me the skills to land my dream job.", avatar: navinGurung },
-  { name: "Priya Maharjan", role: "Cloud Engineer at Deerwalk", text: "The training was exceptional. The instructors are experienced professionals who make complex concepts easy to understand.", avatar: laxmiKathariya },
-];
 
 const Index = () => {
   return (
@@ -163,34 +157,6 @@ const Index = () => {
               </div>
             ))}
           </div>
-        </div>
-      </SectionWrapper>
-
-      {/* Testimonials */}
-      <SectionWrapper>
-        <div className="mb-12 text-center">
-          <h2 className="mb-3 font-display text-3xl font-bold text-foreground lg:text-4xl">
-            What Our <span className="text-gradient">Students Say</span>
-          </h2>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          {testimonials.map((t) => (
-            <div key={t.name} className="gradient-card rounded-xl border border-border p-6">
-              <div className="mb-4 flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                ))}
-              </div>
-              <p className="mb-6 text-sm leading-relaxed text-muted-foreground">"{t.text}"</p>
-              <div className="flex items-center gap-3">
-                <img src={t.avatar} alt={t.name} className="h-10 w-10 rounded-full object-cover" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">{t.name}</div>
-                  <div className="text-xs text-muted-foreground">{t.role}</div>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </SectionWrapper>
 
