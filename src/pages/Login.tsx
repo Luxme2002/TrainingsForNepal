@@ -165,7 +165,13 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-4 text-center">
+            <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+              Forgot your password?
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
             <button onClick={() => setIsSignup(!isSignup)} className="font-medium text-primary hover:underline">
               {isSignup ? "Sign In" : "Sign Up"}
