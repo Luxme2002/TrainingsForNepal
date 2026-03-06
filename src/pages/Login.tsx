@@ -38,7 +38,7 @@ const Login = () => {
 
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -47,7 +47,13 @@ const Login = () => {
           },
         });
         if (error) throw error;
-        toast({ title: "Account created!", description: "Please check your email to verify your account." });
+        // If auto-confirm is on, user gets a session immediately
+        if (data.session) {
+          toast({ title: "Account created!", description: "Welcome aboard!" });
+          navigate(dashboardRoutes[selectedRole]);
+        } else {
+          toast({ title: "Account created!", description: "Please check your email to verify your account." });
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
