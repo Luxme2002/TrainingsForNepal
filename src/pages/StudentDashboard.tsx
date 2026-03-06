@@ -11,26 +11,17 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
-const enrolledCourses = [
-  { title: "Basic to Intermediate Python", progress: 65, lessons: "42/65 Lessons", instructor: "Sandip Lamichhane", icon: "🐍", nextLesson: "OOP Concepts", deadline: "Mar 10, 2026" },
-  { title: "Digital Marketing", progress: 20, lessons: "8/40 Lessons", instructor: "Priya Sharma", icon: "📢", nextLesson: "Google Ads Basics", deadline: "Apr 5, 2026" },
-];
+import { useEnrollments, useCertificates, useCourses } from "@/hooks/useDashboardData";
 
 const upcomingSessions = [
-  { title: "Python Advanced OOP", time: "10:00 AM - 12:00 PM (NPT)", type: "LIVE LAB", date: "24 Feb", course: "Python" },
-  { title: "Digital Literacy Workshop", time: "2:00 PM - 4:00 PM (NPT)", type: "WORKSHOP", date: "26 Feb", course: "Digital Literacy" },
+  { title: "Python Advanced OOP", time: "10:00 AM - 12:00 PM (NPT)", type: "LIVE LAB", date: "24 Mar", course: "Python" },
+  { title: "Digital Literacy Workshop", time: "2:00 PM - 4:00 PM (NPT)", type: "WORKSHOP", date: "26 Mar", course: "Digital Literacy" },
 ];
 
 const initialAssignments = [
-  { title: "Python Data Structures Project", course: "Python", due: "Feb 25, 2026", status: "Submitted", grade: "Pending" },
-  { title: "SEO Audit Report", course: "Digital Marketing", due: "Mar 2, 2026", status: "Pending", grade: "-" },
-  { title: "Basic Algorithm Challenge", course: "Python", due: "Feb 28, 2026", status: "Graded", grade: "88/100" },
-];
-
-const certificates = [
-  { title: "Digital Literacy Certificate", issued: "Jan 15, 2026", issuer: "Trainings for Nepal", id: "TFN-DL-2026-001" },
-  { title: "Web Design Fundamentals", issued: "Nov 20, 2025", issuer: "Trainings for Nepal", id: "TFN-WD-2025-044" },
+  { title: "Python Data Structures Project", course: "Python", due: "Mar 25, 2026", status: "Submitted", grade: "Pending" },
+  { title: "SEO Audit Report", course: "Digital Marketing", due: "Apr 2, 2026", status: "Pending", grade: "-" },
+  { title: "Basic Algorithm Challenge", course: "Python", due: "Mar 28, 2026", status: "Graded", grade: "88/100" },
 ];
 
 const resources = [
@@ -46,22 +37,17 @@ const initialMessages = [
   { from: "Priya Sharma", subject: "Class Rescheduled", preview: "Tomorrow's Digital Marketing class has been moved to 3:00 PM due to a scheduling conflict. Please plan accordingly.", time: "2d ago", read: true },
 ];
 
-const studentProfile = {
-  name: "Aaryan Thapa",
-  id: "#5021",
-  email: "aaryan.thapa@gmail.com",
-  phone: "9800000000",
-  address: "Kathmandu, Nepal",
-  enrolled: "January 2026",
-  courses: 2,
-  certificates: 2,
-};
-
 type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "My Profile" | "Settings" | "Help Center";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, fullName, signOut } = useAuth();
+  const { toast } = useToast();
+
+  // Real data hooks
+  const { data: enrollments = [], isLoading: loadingEnrollments } = useEnrollments(user?.id);
+  const { data: certificates = [], isLoading: loadingCerts } = useCertificates(user?.id);
+
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -69,7 +55,7 @@ const StudentDashboard = () => {
   const [assignments, setAssignments] = useState(initialAssignments);
   const [messages, setMessages] = useState(initialMessages);
   const [editProfile, setEditProfile] = useState(false);
-  const [showCourseDetail, setShowCourseDetail] = useState<typeof enrolledCourses[0] | null>(null);
+  const [showCourseDetail, setShowCourseDetail] = useState<any>(null);
   const [settingsToggles, setSettingsToggles] = useState<Record<string, boolean>>({
     "Class reminders": true, "Assignment deadlines": true, "New messages": true, "Grade updates": true,
   });
@@ -78,7 +64,21 @@ const StudentDashboard = () => {
     { text: "New message from Sandip Lamichhane", time: "2h ago", read: false },
     { text: "Fee reminder: Installment due Mar 1", time: "1d ago", read: true },
   ]);
-  const { toast } = useToast();
+
+  const displayName = fullName || user?.email?.split("@")[0] || "Student";
+  const firstName = displayName.split(" ")[0];
+  const studentId = `#${user?.id?.slice(0, 4).toUpperCase() || "0000"}`;
+
+  // Map enrollments to display format
+  const enrolledCourses = enrollments.map((e) => ({
+    title: e.course?.title || "Unknown Course",
+    progress: e.progress ?? 0,
+    lessons: `${e.completed_lessons ?? 0}/${e.course?.total_lessons ?? 0} Lessons`,
+    instructor: e.course?.trainer_name || "TBA",
+    icon: e.course?.icon || "📚",
+    nextLesson: "Next Lesson",
+    deadline: new Date(e.enrolled_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+  }));
 
   const handleSubmitAssignment = (title: string) => {
     setAssignments(prev => prev.map(a => a.title === title ? { ...a, status: "Submitted" } : a));
@@ -172,8 +172,8 @@ const StudentDashboard = () => {
             <button onClick={() => setActive("My Profile")} className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-1.5 text-sm text-foreground hover:bg-secondary/80">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-3 w-3" /></div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-medium">{studentProfile.name}</p>
-                <p className="text-[10px] text-muted-foreground">ID: {studentProfile.id}</p>
+                <p className="text-xs font-medium">{displayName}</p>
+                <p className="text-[10px] text-muted-foreground">ID: {studentId}</p>
               </div>
             </button>
           </div>
@@ -185,8 +185,12 @@ const StudentDashboard = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="mb-6 rounded-xl bg-gradient-to-r from-primary/80 via-primary/60 to-primary/30 p-6">
-                <h2 className="mb-1 font-display text-2xl font-bold text-primary-foreground">Namaste, Aaryan! 👋</h2>
-                <p className="mb-4 text-sm text-primary-foreground/80">Ready to level up your tech skills today? You've completed <span className="font-bold underline">12 lessons</span> this week!</p>
+                <h2 className="mb-1 font-display text-2xl font-bold text-primary-foreground">Namaste, {firstName}! 👋</h2>
+                <p className="mb-4 text-sm text-primary-foreground/80">
+                  {enrolledCourses.length > 0
+                    ? `You're enrolled in ${enrolledCourses.length} course${enrolledCourses.length > 1 ? "s" : ""}. Keep up the great work!`
+                    : "Ready to start your tech journey? Browse courses to get started!"}
+                </p>
                 <div className="flex flex-wrap gap-3">
                   <Button size="sm" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setActive("My Courses")}>Resume Last Lesson</Button>
                   <Button size="sm" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10" onClick={() => setActive("Schedule")}>View Schedule</Button>
@@ -194,8 +198,8 @@ const StudentDashboard = () => {
               </motion.div>
               <div className="mb-6 grid gap-4 sm:grid-cols-3">
                 {[
-                  { icon: BookOpen, label: "Courses Enrolled", value: "02", sub: "2 In Progress", color: "text-primary", click: "My Courses" },
-                  { icon: Award, label: "Certificates Earned", value: "02", sub: "Verified by TFN", color: "text-emerald-400", click: "Certificates" },
+                  { icon: BookOpen, label: "Courses Enrolled", value: loadingEnrollments ? "..." : enrolledCourses.length.toString().padStart(2, "0"), sub: `${enrolledCourses.filter(c => c.progress < 100).length} In Progress`, color: "text-primary", click: "My Courses" },
+                  { icon: Award, label: "Certificates Earned", value: loadingCerts ? "..." : certificates.length.toString().padStart(2, "0"), sub: "Verified by TFN", color: "text-emerald-400", click: "Certificates" },
                   { icon: Clock, label: "Learning Hours", value: "120+", sub: "+15% improvement", color: "text-primary", click: "Schedule" },
                 ].map((s, i) => (
                   <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
@@ -215,7 +219,14 @@ const StudentDashboard = () => {
               <div className="grid gap-6 lg:grid-cols-5">
                 <div className="lg:col-span-3 space-y-4">
                   <h3 className="font-display font-semibold text-foreground">Courses In Progress</h3>
-                  {enrolledCourses.map((c) => (
+                  {loadingEnrollments ? (
+                    <div className="gradient-card rounded-xl border border-border p-5 text-center"><p className="text-muted-foreground text-sm">Loading courses...</p></div>
+                  ) : enrolledCourses.length === 0 ? (
+                    <div className="gradient-card rounded-xl border border-border p-5 text-center">
+                      <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground text-sm">No courses enrolled yet. Contact admin to get enrolled!</p>
+                    </div>
+                  ) : enrolledCourses.map((c) => (
                     <div key={c.title} className="gradient-card rounded-xl border border-border p-5 cursor-pointer hover:border-primary/30 transition-colors"
                       onClick={() => setShowCourseDetail(c)}>
                       <div className="flex items-start gap-3">
@@ -263,31 +274,41 @@ const StudentDashboard = () => {
           {active === "My Courses" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h1 className="font-display text-xl font-bold text-foreground mb-6">My Courses</h1>
-              <div className="space-y-4">
-                {enrolledCourses.map((c) => (
-                  <div key={c.title} className="gradient-card rounded-xl border border-border p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary text-2xl">{c.icon}</div>
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
-                          <div><h3 className="font-display font-bold text-foreground">{c.title}</h3><p className="text-xs text-muted-foreground">Instructor: {c.instructor} • {c.lessons}</p></div>
-                          <span className="text-xl font-bold text-primary">{c.progress}%</span>
-                        </div>
-                        <Progress value={c.progress} className="h-2 mb-3" />
-                        <div className="flex flex-wrap gap-2"><span className="text-xs text-muted-foreground">📖 Next: {c.nextLesson}</span><span className="text-xs text-muted-foreground">⏰ Deadline: {c.deadline}</span></div>
-                        <div className="mt-3 flex gap-2">
-                          <Button size="sm" className="gradient-primary border-0 text-primary-foreground text-xs"
-                            onClick={() => toast({ title: "Resuming Course", description: `Loading ${c.nextLesson}...` })}>
-                            <Video className="mr-1 h-3 w-3" />Continue Learning
-                          </Button>
-                          <Button size="sm" variant="outline" className="border-border text-xs"
-                            onClick={() => setShowCourseDetail(c)}>View Syllabus</Button>
+              {loadingEnrollments ? (
+                <div className="text-center py-10 text-muted-foreground">Loading...</div>
+              ) : enrolledCourses.length === 0 ? (
+                <div className="gradient-card rounded-xl border border-border p-10 text-center">
+                  <BookOpen className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-display font-semibold text-foreground mb-1">No Courses Yet</h3>
+                  <p className="text-xs text-muted-foreground">Contact admin to enroll in courses.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {enrolledCourses.map((c) => (
+                    <div key={c.title} className="gradient-card rounded-xl border border-border p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-secondary text-2xl">{c.icon}</div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div><h3 className="font-display font-bold text-foreground">{c.title}</h3><p className="text-xs text-muted-foreground">Instructor: {c.instructor} • {c.lessons}</p></div>
+                            <span className="text-xl font-bold text-primary">{c.progress}%</span>
+                          </div>
+                          <Progress value={c.progress} className="h-2 mb-3" />
+                          <div className="flex flex-wrap gap-2"><span className="text-xs text-muted-foreground">📖 Next: {c.nextLesson}</span><span className="text-xs text-muted-foreground">⏰ Enrolled: {c.deadline}</span></div>
+                          <div className="mt-3 flex gap-2">
+                            <Button size="sm" className="gradient-primary border-0 text-primary-foreground text-xs"
+                              onClick={() => toast({ title: "Resuming Course", description: `Loading ${c.nextLesson}...` })}>
+                              <Video className="mr-1 h-3 w-3" />Continue Learning
+                            </Button>
+                            <Button size="sm" variant="outline" className="border-border text-xs"
+                              onClick={() => setShowCourseDetail(c)}>View Syllabus</Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -359,34 +380,42 @@ const StudentDashboard = () => {
           {active === "Certificates" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h1 className="font-display text-xl font-bold text-foreground mb-6">My Certificates</h1>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {certificates.map((c, i) => (
-                  <motion.div key={c.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                    className="gradient-card rounded-xl border border-border p-5">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20"><Award className="h-6 w-6 text-primary" /></div>
-                      <div><h3 className="font-display font-semibold text-foreground text-sm">{c.title}</h3><p className="text-xs text-muted-foreground">{c.issuer}</p></div>
-                    </div>
-                    <div className="space-y-1 text-xs text-muted-foreground mb-4"><p>📅 Issued: {c.issued}</p><p>🔑 ID: {c.id}</p></div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 gradient-primary border-0 text-primary-foreground text-xs"
-                        onClick={() => toast({ title: "Certificate Downloaded", description: `${c.title} has been downloaded.` })}>
-                        <Download className="mr-1 h-3 w-3" />Download
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1 border-border text-xs"
-                        onClick={() => { navigator.clipboard.writeText(`https://trainingsfornepal.com/verify/${c.id}`); toast({ title: "Link Copied", description: "Certificate verification link copied to clipboard!" }); }}>
-                        Share
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="mt-6 gradient-card rounded-xl border border-border p-5 text-center">
-                <BookOpen className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <h3 className="font-display font-semibold text-foreground mb-1">Complete Your Courses</h3>
-                <p className="text-xs text-muted-foreground mb-3">Finish Python and Digital Marketing to earn 2 more certificates!</p>
-                <Button size="sm" variant="outline" className="border-border text-xs" onClick={() => setActive("My Courses")}>Go to Courses</Button>
-              </div>
+              {loadingCerts ? (
+                <div className="text-center py-10 text-muted-foreground">Loading...</div>
+              ) : certificates.length === 0 ? (
+                <div className="gradient-card rounded-xl border border-border p-10 text-center">
+                  <Award className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-display font-semibold text-foreground mb-1">No Certificates Yet</h3>
+                  <p className="text-xs text-muted-foreground mb-3">Complete your courses to earn certificates!</p>
+                  <Button size="sm" variant="outline" className="border-border text-xs" onClick={() => setActive("My Courses")}>Go to Courses</Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {certificates.map((c, i) => (
+                    <motion.div key={c.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
+                      className="gradient-card rounded-xl border border-border p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/20"><Award className="h-6 w-6 text-primary" /></div>
+                        <div><h3 className="font-display font-semibold text-foreground text-sm">{c.title}</h3><p className="text-xs text-muted-foreground">Trainings for Nepal</p></div>
+                      </div>
+                      <div className="space-y-1 text-xs text-muted-foreground mb-4">
+                        <p>📅 Issued: {new Date(c.issued_at).toLocaleDateString()}</p>
+                        <p>🔑 ID: {c.certificate_code || c.id.slice(0, 8)}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="flex-1 gradient-primary border-0 text-primary-foreground text-xs"
+                          onClick={() => toast({ title: "Certificate Downloaded", description: `${c.title} has been downloaded.` })}>
+                          <Download className="mr-1 h-3 w-3" />Download
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 border-border text-xs"
+                          onClick={() => { navigator.clipboard.writeText(`https://trainingsfornepal.com/verify/${c.certificate_code || c.id}`); toast({ title: "Link Copied", description: "Certificate verification link copied!" }); }}>
+                          Share
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -475,15 +504,15 @@ const StudentDashboard = () => {
               <div className="grid gap-6 lg:grid-cols-3">
                 <div className="gradient-card rounded-xl border border-border p-6 text-center">
                   <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-10 w-10" /></div>
-                  <h2 className="font-display font-bold text-foreground text-lg">{studentProfile.name}</h2>
-                  <p className="text-sm text-muted-foreground mb-2">Student ID: {studentProfile.id}</p>
+                  <h2 className="font-display font-bold text-foreground text-lg">{displayName}</h2>
+                  <p className="text-sm text-muted-foreground mb-2">Student ID: {studentId}</p>
                   <span className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium">Active Student</span>
                   <div className="mt-4 grid grid-cols-2 gap-2">
                     <div className="rounded-lg bg-secondary/30 p-2 text-center cursor-pointer hover:bg-secondary/50" onClick={() => setActive("My Courses")}>
-                      <p className="text-lg font-bold text-foreground">{studentProfile.courses}</p><p className="text-[10px] text-muted-foreground">Courses</p>
+                      <p className="text-lg font-bold text-foreground">{enrolledCourses.length}</p><p className="text-[10px] text-muted-foreground">Courses</p>
                     </div>
                     <div className="rounded-lg bg-secondary/30 p-2 text-center cursor-pointer hover:bg-secondary/50" onClick={() => setActive("Certificates")}>
-                      <p className="text-lg font-bold text-foreground">{studentProfile.certificates}</p><p className="text-[10px] text-muted-foreground">Certificates</p>
+                      <p className="text-lg font-bold text-foreground">{certificates.length}</p><p className="text-[10px] text-muted-foreground">Certificates</p>
                     </div>
                   </div>
                   <Button size="sm" className="gradient-primary border-0 text-primary-foreground w-full mt-4" onClick={() => setEditProfile(true)}>Edit Profile</Button>
@@ -493,12 +522,10 @@ const StudentDashboard = () => {
                     <h3 className="font-display font-semibold text-foreground mb-4">Personal Information</h3>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {[
-                        { label: "Full Name", value: studentProfile.name },
-                        { label: "Email", value: studentProfile.email },
-                        { label: "Phone", value: studentProfile.phone },
-                        { label: "Address", value: studentProfile.address },
-                        { label: "Enrolled", value: studentProfile.enrolled },
-                        { label: "Student ID", value: studentProfile.id },
+                        { label: "Full Name", value: displayName },
+                        { label: "Email", value: user?.email || "" },
+                        { label: "Student ID", value: studentId },
+                        { label: "Enrolled Courses", value: enrolledCourses.length.toString() },
                       ].map((d) => (
                         <div key={d.label} className="rounded-lg bg-secondary/30 p-3">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{d.label}</p>
@@ -597,10 +624,8 @@ const StudentDashboard = () => {
               <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Edit Profile</h2><button onClick={() => setEditProfile(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
               <div className="space-y-3">
                 {[
-                  { label: "Full Name", value: studentProfile.name },
-                  { label: "Email", value: studentProfile.email },
-                  { label: "Phone", value: studentProfile.phone },
-                  { label: "Address", value: studentProfile.address },
+                  { label: "Full Name", value: displayName },
+                  { label: "Email", value: user?.email || "" },
                 ].map(f => (
                   <div key={f.label}><label className="text-xs text-muted-foreground">{f.label}</label><input defaultValue={f.value} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
                 ))}
@@ -628,7 +653,7 @@ const StudentDashboard = () => {
               <p className="text-sm text-foreground mb-1"><strong>{showCourseDetail.progress}%</strong> Complete</p>
               <div className="grid grid-cols-2 gap-3 mt-3">
                 <div className="rounded-lg bg-secondary/30 p-3"><p className="text-[10px] text-muted-foreground uppercase">Next Lesson</p><p className="text-sm font-medium text-foreground mt-1">{showCourseDetail.nextLesson}</p></div>
-                <div className="rounded-lg bg-secondary/30 p-3"><p className="text-[10px] text-muted-foreground uppercase">Deadline</p><p className="text-sm font-medium text-foreground mt-1">{showCourseDetail.deadline}</p></div>
+                <div className="rounded-lg bg-secondary/30 p-3"><p className="text-[10px] text-muted-foreground uppercase">Enrolled</p><p className="text-sm font-medium text-foreground mt-1">{showCourseDetail.deadline}</p></div>
               </div>
               <Button className="w-full mt-4 gradient-primary border-0 text-primary-foreground"
                 onClick={() => { setShowCourseDetail(null); toast({ title: "Resuming Course", description: `Loading ${showCourseDetail.nextLesson}...` }); }}>
