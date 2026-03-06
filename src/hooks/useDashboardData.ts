@@ -1,0 +1,190 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+export interface Course {
+  id: string;
+  title: string;
+  description: string | null;
+  icon: string | null;
+  fee: string | null;
+  trainer_id: string | null;
+  trainer_name: string | null;
+  status: string | null;
+  total_lessons: number | null;
+  rating: number | null;
+  created_at: string;
+}
+
+export interface Enrollment {
+  id: string;
+  student_id: string;
+  course_id: string;
+  progress: number | null;
+  completed_lessons: number | null;
+  status: string | null;
+  enrolled_at: string;
+  course?: Course;
+}
+
+export interface Assignment {
+  id: string;
+  course_id: string;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  created_at: string;
+  course?: Course;
+}
+
+export interface AssignmentSubmission {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  status: string | null;
+  grade: string | null;
+  feedback: string | null;
+  submitted_at: string;
+  assignment?: Assignment;
+}
+
+export interface Certificate {
+  id: string;
+  student_id: string;
+  course_id: string | null;
+  title: string;
+  certificate_code: string | null;
+  issued_at: string;
+}
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  role: string;
+  created_at: string;
+}
+
+export function useCourses() {
+  return useQuery({
+    queryKey: ["courses"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .order("title");
+      if (error) throw error;
+      return data as Course[];
+    },
+  });
+}
+
+export function useEnrollments(studentId?: string) {
+  return useQuery({
+    queryKey: ["enrollments", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("*, course:courses(*)")
+        .eq("student_id", studentId!);
+      if (error) throw error;
+      return data as (Enrollment & { course: Course })[];
+    },
+  });
+}
+
+export function useAssignments(studentId?: string) {
+  return useQuery({
+    queryKey: ["assignments", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assignments")
+        .select("*, course:courses(title, icon)")
+        .order("due_date", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSubmissions(studentId?: string) {
+  return useQuery({
+    queryKey: ["submissions", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("assignment_submissions")
+        .select("*, assignment:assignments(title, course_id, due_date, course:courses(title))")
+        .eq("student_id", studentId!);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useCertificates(studentId?: string) {
+  return useQuery({
+    queryKey: ["certificates", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("certificates")
+        .select("*")
+        .eq("student_id", studentId!);
+      if (error) throw error;
+      return data as Certificate[];
+    },
+  });
+}
+
+export function useAllProfiles() {
+  return useQuery({
+    queryKey: ["all-profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Profile[];
+    },
+  });
+}
+
+export function useEnrollmentCount(courseId?: string) {
+  return useQuery({
+    queryKey: ["enrollment-count", courseId],
+    enabled: !!courseId,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("enrollments")
+        .select("*", { count: "exact", head: true })
+        .eq("course_id", courseId!);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+}
+
+export function useAllEnrollments() {
+  return useQuery({
+    queryKey: ["all-enrollments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("enrollments")
+        .select("*, course:courses(title, icon, fee), student:profiles!enrollments_student_id_fkey(full_name, user_id)")
+        .order("enrolled_at", { ascending: false });
+      if (error) {
+        // Fallback without foreign key join
+        const { data: fallback, error: err2 } = await supabase
+          .from("enrollments")
+          .select("*, course:courses(title, icon, fee)")
+          .order("enrolled_at", { ascending: false });
+        if (err2) throw err2;
+        return fallback;
+      }
+      return data;
+    },
+  });
+}

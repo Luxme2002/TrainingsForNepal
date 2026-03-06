@@ -11,20 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-
-const myCourses = [
-  { title: "Basic to Intermediate Python", students: 42, progress: 65, tag: "IN PROGRESS", color: "bg-primary", nextLesson: "OOP Concepts", rating: 4.9 },
-  { title: "Digital Marketing", students: 35, progress: 45, tag: "IN PROGRESS", color: "bg-blue-500", nextLesson: "Google Ads", rating: 4.7 },
-  { title: "Digital Literacy", students: 28, progress: 100, tag: "COMPLETED", color: "bg-emerald-500", nextLesson: "N/A", rating: 4.8 },
-];
-
-const allStudents = [
-  { name: "Aaryan Thapa", course: "Python", progress: 65, grade: "A", submissions: 8, lastActive: "Today" },
-  { name: "Sita Rai", course: "Digital Marketing", progress: 40, grade: "B+", submissions: 5, lastActive: "Yesterday" },
-  { name: "Rahul Hamal", course: "Python", progress: 80, grade: "A+", submissions: 10, lastActive: "Today" },
-  { name: "Priya Lamichhane", course: "Python", progress: 55, grade: "B", submissions: 7, lastActive: "2 days ago" },
-  { name: "Bikash Shrestha", course: "Digital Marketing", progress: 20, grade: "C+", submissions: 3, lastActive: "Today" },
-];
+import { useCourses } from "@/hooks/useDashboardData";
 
 const initialGradingQueue = [
   { student: "Arish Sharma", assignment: "Final Project - Data Viz", course: "Python", submitted: "Today", priority: "high" },
@@ -49,28 +36,31 @@ const resources = [
 ];
 
 const initialMessages = [
-  { from: "Aaryan Thapa", subject: "Assignment Question", preview: "I had a question about the OOP assignment. Can you explain the difference between abstract classes and interfaces in Python? I'm confused about when to use each one.", time: "1h ago", read: false },
-  { from: "Admin", subject: "New Batch Assignment", preview: "You have been assigned a new batch starting March 1st. The batch will have 30 students enrolled in the Python course. Please prepare your syllabus accordingly.", time: "3h ago", read: true },
-  { from: "Rahul Hamal", subject: "Certificate Request", preview: "I'd like to request my completion certificate for the Digital Literacy course. I have completed all assignments and the final exam.", time: "1d ago", read: true },
+  { from: "Aaryan Thapa", subject: "Assignment Question", preview: "I had a question about the OOP assignment. Can you explain the difference between abstract classes and interfaces in Python?", time: "1h ago", read: false },
+  { from: "Admin", subject: "New Batch Assignment", preview: "You have been assigned a new batch starting March 1st. The batch will have 30 students enrolled in the Python course.", time: "3h ago", read: true },
+  { from: "Rahul Hamal", subject: "Certificate Request", preview: "I'd like to request my completion certificate for the Digital Literacy course.", time: "1d ago", read: true },
 ];
 
-const trainerProfile = {
-  name: "Sandip Lamichhane",
-  role: "Senior Python & IT Trainer",
-  email: "sandip.l@trainingsfornepal.com",
-  phone: "9744465510",
-  experience: "5 Years",
-  specialization: "Python, Digital Marketing",
-  rating: 4.9,
-  totalStudents: 420,
-  coursesCompleted: 8,
-};
+const allStudents = [
+  { name: "Aaryan Thapa", course: "Python", progress: 65, grade: "A", submissions: 8, lastActive: "Today" },
+  { name: "Sita Rai", course: "Digital Marketing", progress: 40, grade: "B+", submissions: 5, lastActive: "Yesterday" },
+  { name: "Rahul Hamal", course: "Python", progress: 80, grade: "A+", submissions: 10, lastActive: "Today" },
+  { name: "Priya Lamichhane", course: "Python", progress: 55, grade: "B", submissions: 7, lastActive: "2 days ago" },
+  { name: "Bikash Shrestha", course: "Digital Marketing", progress: 20, grade: "C+", submissions: 3, lastActive: "Today" },
+];
 
 type ActiveSection = "Dashboard" | "My Courses" | "Students" | "Schedule" | "Grading" | "Resources" | "Messages" | "My Profile" | "Settings";
 
 const TrainerDashboard = () => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, fullName, signOut } = useAuth();
+  const { toast } = useToast();
+
+  // Real data
+  const { data: courses = [], isLoading: loadingCourses } = useCourses();
+
+  const displayName = fullName || user?.email?.split("@")[0] || "Trainer";
+
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [gradingStudent, setGradingStudent] = useState<string | null>(null);
@@ -90,7 +80,6 @@ const TrainerDashboard = () => {
     { text: "Admin assigned new batch starting March", time: "3h ago", read: false },
     { text: "Rahul Hamal requested certificate", time: "1d ago", read: true },
   ]);
-  const { toast } = useToast();
 
   const filteredStudents = allStudents.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -102,6 +91,18 @@ const TrainerDashboard = () => {
     setGradingStudent(null);
     toast({ title: "Grade Submitted", description: `${student}'s assignment has been graded successfully.` });
   };
+
+  // Map DB courses to display format
+  const myCourses = courses.map(c => ({
+    title: c.title,
+    students: 0,
+    progress: 0,
+    tag: c.status === "active" ? "IN PROGRESS" : "COMPLETED",
+    color: c.status === "active" ? "bg-primary" : "bg-emerald-500",
+    nextLesson: "Next Lesson",
+    rating: c.rating ?? 0,
+    totalLessons: c.total_lessons ?? 0,
+  }));
 
   const navItems = [
     { icon: BarChart3, label: "Dashboard" },
@@ -120,7 +121,10 @@ const TrainerDashboard = () => {
       <div className="mb-8 flex items-center justify-between px-2">
         <Link to="/" className="flex items-center gap-2">
           <div className="gradient-primary flex h-8 w-8 items-center justify-center rounded-lg"><GraduationCap className="h-4 w-4 text-primary-foreground" /></div>
-          <span className="font-display text-sm font-bold text-primary">NepalTrain</span>
+          <div>
+            <span className="font-display text-sm font-bold text-foreground block">TRAININGS FOR NEPAL</span>
+            <p className="text-[10px] text-muted-foreground">Trainer Portal</p>
+          </div>
         </Link>
         <button className="lg:hidden" onClick={() => setSidebarOpen(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
       </div>
@@ -181,7 +185,7 @@ const TrainerDashboard = () => {
             </div>
             <button onClick={() => setActive("My Profile")} className="flex items-center gap-2 rounded-lg bg-secondary px-3 py-1.5 text-sm text-foreground hover:bg-secondary/80">
               <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-3 w-3" /></div>
-              <span className="hidden sm:inline">Trainer</span>
+              <span className="hidden sm:inline">{displayName}</span>
             </button>
           </div>
         </header>
@@ -190,11 +194,11 @@ const TrainerDashboard = () => {
           {/* DASHBOARD */}
           {active === "Dashboard" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <div className="mb-6"><h1 className="font-display text-xl font-bold text-foreground">Trainer Dashboard</h1><p className="text-xs text-muted-foreground">Welcome back, {trainerProfile.name}</p></div>
+              <div className="mb-6"><h1 className="font-display text-xl font-bold text-foreground">Trainer Dashboard</h1><p className="text-xs text-muted-foreground">Welcome back, {displayName}</p></div>
               <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                   { icon: Users, label: "Total Students", value: "105", change: "+5", click: "Students" },
-                  { icon: BookOpen, label: "Active Courses", value: "2", change: "+0", click: "My Courses" },
+                  { icon: BookOpen, label: "Active Courses", value: loadingCourses ? "..." : courses.filter(c => c.status === "active").length.toString(), change: "+0", click: "My Courses" },
                   { icon: Star, label: "Avg. Rating", value: "4.8", change: "⭐", click: "My Profile" },
                   { icon: Clock, label: "Teaching Hours", value: "450h", change: "+12h", click: "Schedule" },
                 ].map((s, i) => (
@@ -215,14 +219,15 @@ const TrainerDashboard = () => {
                       <button className="text-xs text-primary hover:underline" onClick={() => setActive("My Courses")}>Show All</button>
                     </div>
                     <div className="flex gap-3 overflow-x-auto pb-2">
-                      {myCourses.map((c) => (
+                      {loadingCourses ? (
+                        <p className="text-muted-foreground text-sm p-4">Loading...</p>
+                      ) : myCourses.map((c) => (
                         <div key={c.title} className="min-w-[220px] gradient-card rounded-xl border border-border p-4 cursor-pointer hover:border-primary/30 transition-colors"
                           onClick={() => setActive("My Courses")}>
                           <span className={`mb-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium text-primary-foreground ${c.color}`}>{c.tag}</span>
                           <h4 className="mb-1 text-sm font-medium text-foreground">{c.title}</h4>
-                          <p className="mb-2 text-xs text-muted-foreground">Progress: {c.progress}%</p>
-                          <Progress value={c.progress} className="h-1.5" />
-                          <p className="mt-2 text-xs text-muted-foreground">{c.students} Students</p>
+                          <p className="mb-2 text-xs text-muted-foreground">{c.totalLessons} Lessons</p>
+                          <div className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-400 fill-yellow-400" /><span className="text-xs text-muted-foreground">{c.rating}</span></div>
                         </div>
                       ))}
                     </div>
@@ -272,33 +277,34 @@ const TrainerDashboard = () => {
           {active === "My Courses" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <h1 className="font-display text-xl font-bold text-foreground mb-6">My Courses</h1>
-              <div className="space-y-4">
-                {myCourses.map((c) => (
-                  <div key={c.title} className="gradient-card rounded-xl border border-border p-5">
-                    <div className="flex items-start justify-between mb-3">
-                      <div><h3 className="font-display font-bold text-foreground">{c.title}</h3><p className="text-xs text-muted-foreground">{c.students} Students enrolled</p></div>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium text-primary-foreground ${c.color}`}>{c.tag}</span>
+              {loadingCourses ? (
+                <p className="text-center text-muted-foreground py-10">Loading...</p>
+              ) : (
+                <div className="space-y-4">
+                  {myCourses.map((c) => (
+                    <div key={c.title} className="gradient-card rounded-xl border border-border p-5">
+                      <div className="flex items-start justify-between mb-3">
+                        <div><h3 className="font-display font-bold text-foreground">{c.title}</h3><p className="text-xs text-muted-foreground">{c.totalLessons} Lessons</p></div>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium text-primary-foreground ${c.color}`}>{c.tag}</span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-3">
+                        <span className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />{c.rating} Rating</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="gradient-primary border-0 text-primary-foreground text-xs"
+                          onClick={() => toast({ title: "Starting Session", description: `Starting live session for ${c.title}...` })}>
+                          <Video className="mr-1 h-3 w-3" />Start Session
+                        </Button>
+                        <Button size="sm" variant="outline" className="border-border text-xs"
+                          onClick={() => toast({ title: "Edit Content", description: `Opening content editor for ${c.title}...` })}>
+                          <Edit className="mr-1 h-3 w-3" />Edit Content
+                        </Button>
+                        <Button size="sm" variant="outline" className="border-border text-xs" onClick={() => setActive("Students")}>View Students</Button>
+                      </div>
                     </div>
-                    <Progress value={c.progress} className="h-2 mb-3" />
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-3">
-                      <span>📖 Next: {c.nextLesson}</span>
-                      <span className="flex items-center gap-1"><Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />{c.rating} Rating</span>
-                      <span>📊 {c.progress}% Complete</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="gradient-primary border-0 text-primary-foreground text-xs"
-                        onClick={() => toast({ title: "Starting Session", description: `Starting live session for ${c.title}...` })}>
-                        <Video className="mr-1 h-3 w-3" />Start Session
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-border text-xs"
-                        onClick={() => toast({ title: "Edit Content", description: `Opening content editor for ${c.title}...` })}>
-                        <Edit className="mr-1 h-3 w-3" />Edit Content
-                      </Button>
-                      <Button size="sm" variant="outline" className="border-border text-xs" onClick={() => setActive("Students")}>View Students</Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -546,17 +552,17 @@ const TrainerDashboard = () => {
               <div className="grid gap-6 lg:grid-cols-3">
                 <div className="gradient-card rounded-xl border border-border p-6 text-center">
                   <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/20 text-primary"><User className="h-10 w-10" /></div>
-                  <h2 className="font-display font-bold text-foreground text-lg">{trainerProfile.name}</h2>
-                  <p className="text-sm text-muted-foreground mb-2">{trainerProfile.role}</p>
+                  <h2 className="font-display font-bold text-foreground text-lg">{displayName}</h2>
+                  <p className="text-sm text-muted-foreground mb-2">Trainer</p>
                   <div className="flex items-center justify-center gap-1 mb-3">
-                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /><span className="font-bold text-foreground">{trainerProfile.rating}</span><span className="text-xs text-muted-foreground">/ 5.0</span>
+                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" /><span className="font-bold text-foreground">4.8</span><span className="text-xs text-muted-foreground">/ 5.0</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     <div className="rounded-lg bg-secondary/30 p-2 text-center cursor-pointer hover:bg-secondary/50" onClick={() => setActive("Students")}>
-                      <p className="text-lg font-bold text-foreground">{trainerProfile.totalStudents}</p><p className="text-[10px] text-muted-foreground">Students</p>
+                      <p className="text-lg font-bold text-foreground">105</p><p className="text-[10px] text-muted-foreground">Students</p>
                     </div>
                     <div className="rounded-lg bg-secondary/30 p-2 text-center cursor-pointer hover:bg-secondary/50" onClick={() => setActive("My Courses")}>
-                      <p className="text-lg font-bold text-foreground">{trainerProfile.coursesCompleted}</p><p className="text-[10px] text-muted-foreground">Courses</p>
+                      <p className="text-lg font-bold text-foreground">{courses.length}</p><p className="text-[10px] text-muted-foreground">Courses</p>
                     </div>
                   </div>
                   <Button size="sm" className="gradient-primary border-0 text-primary-foreground w-full" onClick={() => setEditProfile(true)}>Edit Profile</Button>
@@ -566,12 +572,10 @@ const TrainerDashboard = () => {
                     <h3 className="font-display font-semibold text-foreground mb-4">Profile Details</h3>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {[
-                        { label: "Full Name", value: trainerProfile.name },
-                        { label: "Email", value: trainerProfile.email },
-                        { label: "Phone", value: trainerProfile.phone },
-                        { label: "Experience", value: trainerProfile.experience },
-                        { label: "Specialization", value: trainerProfile.specialization },
-                        { label: "Rating", value: `${trainerProfile.rating} / 5.0` },
+                        { label: "Full Name", value: displayName },
+                        { label: "Email", value: user?.email || "" },
+                        { label: "Role", value: "Trainer" },
+                        { label: "Rating", value: "4.8 / 5.0" },
                       ].map((d) => (
                         <div key={d.label} className="rounded-lg bg-secondary/30 p-3">
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{d.label}</p>
@@ -583,7 +587,7 @@ const TrainerDashboard = () => {
                   <div className="gradient-card rounded-xl border border-border p-5">
                     <h3 className="font-display font-semibold text-foreground mb-3">Achievements</h3>
                     <div className="flex flex-wrap gap-2">
-                      {["🏆 Top Rated Trainer", "⭐ 5-Star Instructor", "📚 8 Courses Completed", "👥 420+ Students Trained", "🎯 Expert Python Trainer"].map((a) => (
+                      {["🏆 Top Rated Trainer", "⭐ 5-Star Instructor", "📚 Course Expert", "👥 100+ Students Trained"].map((a) => (
                         <span key={a} className="rounded-full bg-primary/10 text-primary px-3 py-1 text-xs font-medium cursor-pointer hover:bg-primary/20 transition-colors"
                           onClick={() => toast({ title: "Achievement", description: a })}>{a}</span>
                       ))}
@@ -690,10 +694,8 @@ const TrainerDashboard = () => {
               <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Edit Profile</h2><button onClick={() => setEditProfile(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
               <div className="space-y-3">
                 {[
-                  { label: "Full Name", value: trainerProfile.name },
-                  { label: "Email", value: trainerProfile.email },
-                  { label: "Phone", value: trainerProfile.phone },
-                  { label: "Specialization", value: trainerProfile.specialization },
+                  { label: "Full Name", value: displayName },
+                  { label: "Email", value: user?.email || "" },
                 ].map(f => (
                   <div key={f.label}><label className="text-xs text-muted-foreground">{f.label}</label><input defaultValue={f.value} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
                 ))}
