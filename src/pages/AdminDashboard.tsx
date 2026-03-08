@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useCourses, useAllProfiles, useAllEnrollments, useMessages } from "@/hooks/useDashboardData";
+import { useCourses, useAllProfiles, useAllEnrollments, useMessages, usePayments } from "@/hooks/useDashboardData";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -28,12 +28,6 @@ const navItems = [
   { icon: Settings, label: "Settings" },
 ];
 
-const recentTransactions = [
-  { name: "Arish Koirala", email: "arish@gmail.com", course: "Python", date: "Oct 17, 2025", amount: "NPR 25,000", status: "COMPLETED" },
-  { name: "Sunita Dahal", email: "sunita.d@gmail.com", course: "Hardware & Networking", date: "Oct 11, 2025", amount: "NPR 22,000", status: "COMPLETED" },
-  { name: "Binod Poudel", email: "binod.p@gmail.com", course: "Digital Marketing", date: "Oct 05, 2025", amount: "NPR 18,000", status: "COMPLETED" },
-  { name: "Ramesh Jha", email: "ramesh.jha@gmail.com", course: "Professional Dev", date: "Oct 09, 2025", amount: "NPR 15,000", status: "PENDING" },
-];
 
 type ActiveSection =
   | "Dashboard" | "User Management" | "Courses" | "Enrollments" | "Messages"
@@ -48,6 +42,7 @@ const AdminDashboard = () => {
   const { data: allProfilesData = [], isLoading: loadingProfiles } = useAllProfiles();
   const { data: allEnrollments = [], refetch: refetchEnrollments } = useAllEnrollments();
   const { data: messages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: payments = [], refetch: refetchPayments } = usePayments();
 
   const students = allProfilesData.filter(p => p.role === "student");
   const trainers = allProfilesData.filter(p => p.role === "trainer");
@@ -93,6 +88,10 @@ const AdminDashboard = () => {
 
   // Message compose form
   const [msgForm, setMsgForm] = useState({ recipientId: "", subject: "", body: "" });
+
+  // Payment form
+  const [showAddPayment, setShowAddPayment] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ studentId: "", courseId: "", amount: "", method: "cash", notes: "", status: "completed" });
 
   useEffect(() => {
     if (editCourse) {
@@ -244,8 +243,18 @@ const AdminDashboard = () => {
     (s.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalRevenue = payments.filter(p => p.status === "completed").reduce((sum, p) => sum + p.amount, 0);
+  const pendingRevenue = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.amount, 0);
+  const thisMonthPayments = payments.filter(p => {
+    const d = new Date(p.created_at);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && p.status === "completed";
+  }).reduce((sum, p) => sum + p.amount, 0);
+
+  const formatNPR = (n: number) => `NPR ${n.toLocaleString("en-IN")}`;
+
   const stats = [
-    { icon: DollarSign, label: "Total Revenue", value: "NPR 12,50,000", change: "+18%", color: "from-primary/20 to-primary/5" },
+    { icon: DollarSign, label: "Total Revenue", value: formatNPR(totalRevenue), change: `${payments.length} txns`, color: "from-primary/20 to-primary/5" },
     { icon: Users, label: "Total Students", value: loadingProfiles ? "..." : students.length.toString(), change: "+12%", color: "from-blue-500/20 to-blue-500/5" },
     { icon: BookOpen, label: "Active Courses", value: loadingCourses ? "..." : courses.length.toString(), change: `${courses.length}`, color: "from-emerald-500/20 to-emerald-500/5" },
     { icon: TrendingUp, label: "Trainers", value: loadingProfiles ? "..." : trainers.length.toString(), change: "Active", color: "from-yellow-500/20 to-yellow-500/5" },
@@ -420,15 +429,21 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentTransactions.map((t) => (
-                        <tr key={t.name} className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/20">
-                          <td className="py-3"><div className="font-medium text-foreground">{t.name}</div><div className="text-[10px] text-muted-foreground">{t.email}</div></td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.course}</td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.date}</td>
-                          <td className="py-3 font-medium text-foreground text-xs">{t.amount}</td>
-                          <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span></td>
-                        </tr>
-                      ))}
+                      {payments.slice(0, 5).map((t) => {
+                        const studentProfile = allProfilesData.find(p => p.user_id === t.student_id);
+                        return (
+                          <tr key={t.id} className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/20">
+                            <td className="py-3"><div className="font-medium text-foreground">{studentProfile?.full_name || "Unknown"}</div></td>
+                            <td className="py-3 text-muted-foreground text-xs">{t.course?.title || "—"}</td>
+                            <td className="py-3 text-muted-foreground text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 font-medium text-foreground text-xs">{t.currency} {t.amount.toLocaleString("en-IN")}</td>
+                            <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status.toUpperCase()}</span></td>
+                          </tr>
+                        );
+                      })}
+                      {payments.length === 0 && (
+                        <tr><td colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No transactions yet</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -660,16 +675,21 @@ const AdminDashboard = () => {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="mb-6 flex items-center justify-between">
                 <h1 className="font-display text-xl font-bold text-foreground">Revenue & Finance</h1>
-                <Button size="sm" variant="outline" className="border-border text-muted-foreground"
-                  onClick={() => toast({ title: "Exporting Finance Data", description: "Your finance report is being generated as PDF." })}>
-                  <Download className="mr-1 h-3 w-3" /> Export
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" className="gradient-primary border-0 text-primary-foreground" onClick={() => setShowAddPayment(true)}>
+                    <Plus className="mr-1 h-3 w-3" /> Record Payment
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-border text-muted-foreground"
+                    onClick={() => toast({ title: "Exporting Finance Data", description: "Your finance report is being generated as PDF." })}>
+                    <Download className="mr-1 h-3 w-3" /> Export
+                  </Button>
+                </div>
               </div>
               <div className="mb-6 grid gap-4 sm:grid-cols-3">
                 {[
-                  { label: "Total Revenue", value: "NPR 12,50,000", icon: DollarSign, change: "+18%", color: "text-primary" },
-                  { label: "This Month", value: "NPR 1,85,000", icon: TrendingUp, change: "+12%", color: "text-emerald-400" },
-                  { label: "Pending Fees", value: "NPR 45,000", icon: AlertCircle, change: "4 Students", color: "text-yellow-400" },
+                  { label: "Total Revenue", value: formatNPR(totalRevenue), icon: DollarSign, change: `${payments.filter(p => p.status === "completed").length} paid`, color: "text-primary" },
+                  { label: "This Month", value: formatNPR(thisMonthPayments), icon: TrendingUp, change: "Current", color: "text-emerald-400" },
+                  { label: "Pending Fees", value: formatNPR(pendingRevenue), icon: AlertCircle, change: `${payments.filter(p => p.status === "pending").length} pending`, color: "text-yellow-400" },
                 ].map((s) => (
                   <div key={s.label} className="gradient-card rounded-xl border border-border p-5">
                     <div className="flex items-center justify-between mb-2"><s.icon className={`h-5 w-5 ${s.color}`} /><span className="text-[10px] text-primary font-medium">{s.change}</span></div>
@@ -678,27 +698,91 @@ const AdminDashboard = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Add Payment Modal */}
+              {showAddPayment && (
+                <div className="mb-6 gradient-card rounded-xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-display font-semibold text-foreground">Record Payment</h3>
+                    <button onClick={() => setShowAddPayment(false)}><X className="h-4 w-4 text-muted-foreground" /></button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.studentId}
+                      onChange={e => setPaymentForm(f => ({ ...f, studentId: e.target.value }))}>
+                      <option value="">Select Student</option>
+                      {students.map(s => <option key={s.user_id} value={s.user_id}>{s.full_name || s.user_id}</option>)}
+                    </select>
+                    <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.courseId}
+                      onChange={e => setPaymentForm(f => ({ ...f, courseId: e.target.value }))}>
+                      <option value="">Select Course</option>
+                      {courses.map(c => <option key={c.id} value={c.id}>{c.icon} {c.title} ({c.fee})</option>)}
+                    </select>
+                    <input type="number" placeholder="Amount (NPR)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.amount}
+                      onChange={e => setPaymentForm(f => ({ ...f, amount: e.target.value }))} />
+                    <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.method}
+                      onChange={e => setPaymentForm(f => ({ ...f, method: e.target.value }))}>
+                      <option value="cash">Cash</option>
+                      <option value="bank_transfer">Bank Transfer</option>
+                      <option value="esewa">eSewa</option>
+                      <option value="khalti">Khalti</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <select className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.status}
+                      onChange={e => setPaymentForm(f => ({ ...f, status: e.target.value }))}>
+                      <option value="completed">Completed</option>
+                      <option value="pending">Pending</option>
+                    </select>
+                    <input type="text" placeholder="Notes (optional)" className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={paymentForm.notes}
+                      onChange={e => setPaymentForm(f => ({ ...f, notes: e.target.value }))} />
+                  </div>
+                  <Button className="mt-3 gradient-primary border-0 text-primary-foreground" size="sm" onClick={async () => {
+                    if (!paymentForm.studentId || !paymentForm.amount) { toast({ title: "Error", description: "Student and amount are required", variant: "destructive" }); return; }
+                    const { error } = await supabase.from("payments").insert({
+                      student_id: paymentForm.studentId,
+                      course_id: paymentForm.courseId || null,
+                      amount: parseInt(paymentForm.amount),
+                      payment_method: paymentForm.method,
+                      status: paymentForm.status,
+                      notes: paymentForm.notes || null,
+                      paid_at: paymentForm.status === "completed" ? new Date().toISOString() : null,
+                    });
+                    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                    toast({ title: "Payment Recorded", description: `NPR ${parseInt(paymentForm.amount).toLocaleString("en-IN")} recorded successfully.` });
+                    setPaymentForm({ studentId: "", courseId: "", amount: "", method: "cash", notes: "", status: "completed" });
+                    setShowAddPayment(false);
+                    refetchPayments();
+                  }}>
+                    <CheckCircle className="mr-1 h-3 w-3" /> Save Payment
+                  </Button>
+                </div>
+              )}
+
               <div className="gradient-card rounded-xl border border-border p-5">
                 <h3 className="mb-4 font-display font-semibold text-foreground">All Transactions</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Receipt</th>
+                        <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Method</th><th className="pb-3 font-medium">Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {recentTransactions.map((t) => (
-                        <tr key={t.name} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
-                          <td className="py-3"><div className="font-medium text-foreground">{t.name}</div><div className="text-[10px] text-muted-foreground">{t.email}</div></td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.course}</td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.date}</td>
-                          <td className="py-3 font-medium text-foreground text-xs">{t.amount}</td>
-                          <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span></td>
-                          <td className="py-3"><button className="text-xs text-primary hover:underline flex items-center gap-1"
-                            onClick={() => toast({ title: "Receipt Downloaded", description: `Receipt for ${t.name} - ${t.amount}` })}><Download className="h-3 w-3" /> PDF</button></td>
-                        </tr>
-                      ))}
+                      {payments.map((t) => {
+                        const sp = allProfilesData.find(p => p.user_id === t.student_id);
+                        return (
+                          <tr key={t.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
+                            <td className="py-3"><div className="font-medium text-foreground">{sp?.full_name || "Unknown"}</div></td>
+                            <td className="py-3 text-muted-foreground text-xs">{t.course?.title || "—"}</td>
+                            <td className="py-3 text-muted-foreground text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 font-medium text-foreground text-xs">{t.currency} {t.amount.toLocaleString("en-IN")}</td>
+                            <td className="py-3 text-muted-foreground text-xs capitalize">{t.payment_method || "—"}</td>
+                            <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status.toUpperCase()}</span></td>
+                          </tr>
+                        );
+                      })}
+                      {payments.length === 0 && (
+                        <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">No transactions recorded yet</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

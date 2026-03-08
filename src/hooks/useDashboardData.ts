@@ -225,3 +225,33 @@ export function useSessions(courseId?: string) {
     },
   });
 }
+
+export interface Payment {
+  id: string;
+  student_id: string;
+  course_id: string | null;
+  amount: number;
+  currency: string;
+  status: string;
+  payment_method: string | null;
+  receipt_number: string | null;
+  notes: string | null;
+  paid_at: string | null;
+  created_at: string;
+  course?: { title: string; icon: string | null };
+  student_profile?: Profile;
+}
+
+export function usePayments() {
+  return useQuery({
+    queryKey: ["payments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*, course:courses(title, icon)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Payment[];
+    },
+  });
+}
