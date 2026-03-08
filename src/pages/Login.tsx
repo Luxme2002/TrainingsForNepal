@@ -12,7 +12,6 @@ type Role = "student" | "trainer" | "admin";
 const roles = [
   { key: "student" as Role, label: "Student", icon: BookOpen, color: "bg-primary/10 text-primary border-primary/30" },
   { key: "trainer" as Role, label: "Trainer", icon: Users, color: "bg-blue-500/10 text-blue-400 border-blue-500/30" },
-  { key: "admin" as Role, label: "Admin", icon: Shield, color: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" },
 ];
 
 const dashboardRoutes: Record<Role, string> = {

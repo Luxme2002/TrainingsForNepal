@@ -4,14 +4,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen, Clock, Award, GraduationCap, LogOut, Calendar, FileText,
   Settings, Bell, User, MessageSquare, HelpCircle, ChevronRight, Video,
-  Download, CheckCircle2, Star, X, Menu, Upload, Send
+  Download, CheckCircle2, Star, X, Menu, Upload, Send, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollments, useCertificates, useCourses, useMessages, useAllProfiles } from "@/hooks/useDashboardData";
+import { useEnrollments, useCertificates, useCourses, useMessages, useAllProfiles, useStudentPayments } from "@/hooks/useDashboardData";
 import { supabase } from "@/integrations/supabase/client";
 
 const upcomingSessions = [
