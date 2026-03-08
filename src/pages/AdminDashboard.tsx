@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useCourses, useAllProfiles, useAllEnrollments, useMessages } from "@/hooks/useDashboardData";
+import { useCourses, useAllProfiles, useAllEnrollments, useMessages, usePayments } from "@/hooks/useDashboardData";
 import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
@@ -28,12 +28,6 @@ const navItems = [
   { icon: Settings, label: "Settings" },
 ];
 
-const recentTransactions = [
-  { name: "Arish Koirala", email: "arish@gmail.com", course: "Python", date: "Oct 17, 2025", amount: "NPR 25,000", status: "COMPLETED" },
-  { name: "Sunita Dahal", email: "sunita.d@gmail.com", course: "Hardware & Networking", date: "Oct 11, 2025", amount: "NPR 22,000", status: "COMPLETED" },
-  { name: "Binod Poudel", email: "binod.p@gmail.com", course: "Digital Marketing", date: "Oct 05, 2025", amount: "NPR 18,000", status: "COMPLETED" },
-  { name: "Ramesh Jha", email: "ramesh.jha@gmail.com", course: "Professional Dev", date: "Oct 09, 2025", amount: "NPR 15,000", status: "PENDING" },
-];
 
 type ActiveSection =
   | "Dashboard" | "User Management" | "Courses" | "Enrollments" | "Messages"
