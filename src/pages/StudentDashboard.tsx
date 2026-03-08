@@ -34,7 +34,7 @@ const resources = [
 
 const initialMessages: any[] = [];
 
-type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "My Profile" | "Settings" | "Help Center";
+type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "Payments" | "My Profile" | "Settings" | "Help Center";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -45,6 +45,8 @@ const StudentDashboard = () => {
   const { data: enrollments = [], isLoading: loadingEnrollments } = useEnrollments(user?.id);
   const { data: certificates = [], isLoading: loadingCerts } = useCertificates(user?.id);
   const { data: realMessages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: allProfilesData = [] } = useAllProfiles();
+  const { data: studentPayments = [], isLoading: loadingPayments } = useStudentPayments(user?.id);
   const { data: allProfilesData = [] } = useAllProfiles();
 
   const [active, setActive] = useState<ActiveSection>("Dashboard");
@@ -121,6 +123,7 @@ const StudentDashboard = () => {
     { icon: Award, label: "Certificates" },
     { icon: Download, label: "Resources" },
     { icon: MessageSquare, label: "Messages" },
+    { icon: DollarSign, label: "Payments" },
     { icon: User, label: "My Profile" },
   ];
 
