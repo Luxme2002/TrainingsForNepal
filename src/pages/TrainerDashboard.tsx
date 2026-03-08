@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useCourses } from "@/hooks/useDashboardData";
+import { useCourses, useMessages, useAllProfiles } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
 
 const initialGradingQueue = [
   { student: "Arish Sharma", assignment: "Final Project - Data Viz", course: "Python", submitted: "Today", priority: "high" },
