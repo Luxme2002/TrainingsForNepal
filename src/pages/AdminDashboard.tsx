@@ -425,15 +425,21 @@ const AdminDashboard = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {recentTransactions.map((t) => (
-                        <tr key={t.name} className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/20">
-                          <td className="py-3"><div className="font-medium text-foreground">{t.name}</div><div className="text-[10px] text-muted-foreground">{t.email}</div></td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.course}</td>
-                          <td className="py-3 text-muted-foreground text-xs">{t.date}</td>
-                          <td className="py-3 font-medium text-foreground text-xs">{t.amount}</td>
-                          <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "COMPLETED" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status}</span></td>
-                        </tr>
-                      ))}
+                      {payments.slice(0, 5).map((t) => {
+                        const studentProfile = allProfilesData.find(p => p.user_id === t.student_id);
+                        return (
+                          <tr key={t.id} className="border-b border-border/50 last:border-0 cursor-pointer hover:bg-secondary/20">
+                            <td className="py-3"><div className="font-medium text-foreground">{studentProfile?.full_name || "Unknown"}</div></td>
+                            <td className="py-3 text-muted-foreground text-xs">{t.course?.title || "—"}</td>
+                            <td className="py-3 text-muted-foreground text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 font-medium text-foreground text-xs">{t.currency} {t.amount.toLocaleString("en-IN")}</td>
+                            <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status.toUpperCase()}</span></td>
+                          </tr>
+                        );
+                      })}
+                      {payments.length === 0 && (
+                        <tr><td colSpan={5} className="py-6 text-center text-sm text-muted-foreground">No transactions yet</td></tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
