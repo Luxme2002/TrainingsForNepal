@@ -92,6 +92,8 @@ const AdminDashboard = () => {
   // Payment form
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [paymentForm, setPaymentForm] = useState({ studentId: "", courseId: "", amount: "", method: "cash", notes: "", status: "completed" });
+  const [editPayment, setEditPayment] = useState<any>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState({ amount: "", method: "", status: "", notes: "" });
 
   useEffect(() => {
     if (editCourse) {
@@ -763,34 +765,94 @@ const AdminDashboard = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                        <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Method</th><th className="pb-3 font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payments.map((t) => {
-                        const sp = allProfilesData.find(p => p.user_id === t.student_id);
-                        return (
-                          <tr key={t.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
-                            <td className="py-3"><div className="font-medium text-foreground">{sp?.full_name || "Unknown"}</div></td>
-                            <td className="py-3 text-muted-foreground text-xs">{t.course?.title || "—"}</td>
-                            <td className="py-3 text-muted-foreground text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
-                            <td className="py-3 font-medium text-foreground text-xs">{t.currency} {t.amount.toLocaleString("en-IN")}</td>
-                            <td className="py-3 text-muted-foreground text-xs capitalize">{t.payment_method || "—"}</td>
-                            <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status.toUpperCase()}</span></td>
-                          </tr>
-                        );
-                      })}
-                      {payments.length === 0 && (
-                        <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">No transactions recorded yet</td></tr>
-                      )}
-                    </tbody>
+                         <th className="pb-3 font-medium">Student</th><th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Method</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Actions</th>
+                       </tr>
+                     </thead>
+                     <tbody>
+                       {payments.map((t) => {
+                         const sp = allProfilesData.find(p => p.user_id === t.student_id);
+                         return (
+                           <tr key={t.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20">
+                             <td className="py-3"><div className="font-medium text-foreground">{sp?.full_name || "Unknown"}</div></td>
+                             <td className="py-3 text-muted-foreground text-xs">{t.course?.title || "—"}</td>
+                             <td className="py-3 text-muted-foreground text-xs">{new Date(t.created_at).toLocaleDateString()}</td>
+                             <td className="py-3 font-medium text-foreground text-xs">{t.currency} {t.amount.toLocaleString("en-IN")}</td>
+                             <td className="py-3 text-muted-foreground text-xs capitalize">{t.payment_method || "—"}</td>
+                             <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${t.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{t.status.toUpperCase()}</span></td>
+                             <td className="py-3">
+                               <div className="flex gap-1">
+                                 <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-foreground" onClick={() => { setEditPayment(t); setEditPaymentForm({ amount: t.amount.toString(), method: t.payment_method || "", status: t.status, notes: t.notes || "" }); }}><Edit className="h-3 w-3" /></button>
+                                 <button className="p-1 rounded hover:bg-secondary text-muted-foreground hover:text-primary" onClick={async () => {
+                                   const { error } = await supabase.from("payments").delete().eq("id", t.id);
+                                   if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); } else { toast({ title: "Payment Deleted" }); refetchPayments(); }
+                                 }}><Trash2 className="h-3 w-3" /></button>
+                               </div>
+                             </td>
+                           </tr>
+                         );
+                       })}
+                       {payments.length === 0 && (
+                         <tr><td colSpan={7} className="py-6 text-center text-sm text-muted-foreground">No transactions recorded yet</td></tr>
+                       )}
+                     </tbody>
                   </table>
                 </div>
-              </div>
-            </motion.div>
-          )}
+               </div>
 
-          {/* REPORTS */}
+               {/* Edit Payment Modal */}
+               {editPayment && (
+                 <div className="mt-4 gradient-card rounded-xl border border-border p-5">
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="font-display font-semibold text-foreground">Edit Payment</h3>
+                     <button onClick={() => setEditPayment(null)}><X className="h-4 w-4 text-muted-foreground" /></button>
+                   </div>
+                   <div className="grid gap-3 sm:grid-cols-2">
+                     <div>
+                       <label className="text-xs text-muted-foreground">Amount (NPR)</label>
+                       <input type="number" className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={editPaymentForm.amount}
+                         onChange={e => setEditPaymentForm(f => ({ ...f, amount: e.target.value }))} />
+                     </div>
+                     <div>
+                       <label className="text-xs text-muted-foreground">Method</label>
+                       <select className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={editPaymentForm.method}
+                         onChange={e => setEditPaymentForm(f => ({ ...f, method: e.target.value }))}>
+                         <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="esewa">eSewa</option><option value="khalti">Khalti</option><option value="other">Other</option>
+                       </select>
+                     </div>
+                     <div>
+                       <label className="text-xs text-muted-foreground">Status</label>
+                       <select className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={editPaymentForm.status}
+                         onChange={e => setEditPaymentForm(f => ({ ...f, status: e.target.value }))}>
+                         <option value="completed">Completed</option><option value="pending">Pending</option>
+                       </select>
+                     </div>
+                     <div>
+                       <label className="text-xs text-muted-foreground">Notes</label>
+                       <input type="text" className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground" value={editPaymentForm.notes}
+                         onChange={e => setEditPaymentForm(f => ({ ...f, notes: e.target.value }))} />
+                     </div>
+                   </div>
+                   <Button className="mt-3 gradient-primary border-0 text-primary-foreground" size="sm" onClick={async () => {
+                     const { error } = await supabase.from("payments").update({
+                       amount: parseInt(editPaymentForm.amount),
+                       payment_method: editPaymentForm.method,
+                       status: editPaymentForm.status,
+                       notes: editPaymentForm.notes || null,
+                       paid_at: editPaymentForm.status === "completed" ? new Date().toISOString() : null,
+                     }).eq("id", editPayment.id);
+                     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                     toast({ title: "Payment Updated" });
+                     setEditPayment(null);
+                     refetchPayments();
+                   }}>
+                     <CheckCircle className="mr-1 h-3 w-3" /> Update Payment
+                   </Button>
+                 </div>
+               )}
+             </motion.div>
+           )}
+
+           {/* REPORTS */}
           {active === "Reports" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="mb-6"><h1 className="font-display text-xl font-bold text-foreground">Reports</h1></div>
