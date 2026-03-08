@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Bot, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 
+const STORAGE_KEY = "tfn_chat_history";
 type Msg = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
