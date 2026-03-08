@@ -59,6 +59,8 @@ const TrainerDashboard = () => {
 
   // Real data
   const { data: courses = [], isLoading: loadingCourses } = useCourses();
+  const { data: realMessages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: allProfilesData = [] } = useAllProfiles();
 
   const displayName = fullName || user?.email?.split("@")[0] || "Trainer";
 
@@ -67,12 +69,13 @@ const TrainerDashboard = () => {
   const [gradingStudent, setGradingStudent] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMessage, setSelectedMessage] = useState<typeof initialMessages[0] | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [viewStudent, setViewStudent] = useState<typeof allStudents[0] | null>(null);
   const [editProfile, setEditProfile] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [gradingQueue, setGradingQueue] = useState(initialGradingQueue);
-  const [messages, setMessages] = useState(initialMessages);
+  const [composeMessage, setComposeMessage] = useState(false);
+  const [msgForm, setMsgForm] = useState({ recipientId: "", subject: "", body: "" });
   const [settingsToggles, setSettingsToggles] = useState<Record<string, boolean>>({
     "New student enrollments": true, "Assignment submissions": true, "Class reminders": true, "Admin announcements": true,
   });
