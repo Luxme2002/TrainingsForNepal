@@ -80,6 +80,34 @@ const StudentDashboard = () => {
     deadline: new Date(e.enrolled_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   }));
 
+  // Realtime messages
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('student-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => { refetchMessages(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, refetchMessages]);
+
+  const handleSendMessage = async () => {
+    if (!msgForm.recipientId || !msgForm.body) return;
+    const { error } = await supabase.from("messages").insert({
+      sender_id: user!.id,
+      recipient_id: msgForm.recipientId,
+      subject: msgForm.subject || "No Subject",
+      body: msgForm.body,
+    });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Message Sent" });
+      setComposeMessage(false);
+      setMsgForm({ recipientId: "", subject: "", body: "" });
+      refetchMessages();
+    }
+  };
+
   const handleSubmitAssignment = (title: string) => {
     setAssignments(prev => prev.map(a => a.title === title ? { ...a, status: "Submitted" } : a));
     toast({ title: "Assignment Submitted", description: `${title} has been submitted successfully.` });
