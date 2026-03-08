@@ -44,15 +44,18 @@ const StudentDashboard = () => {
   // Real data hooks
   const { data: enrollments = [], isLoading: loadingEnrollments } = useEnrollments(user?.id);
   const { data: certificates = [], isLoading: loadingCerts } = useCertificates(user?.id);
+  const { data: realMessages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: allProfilesData = [] } = useAllProfiles();
 
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<typeof initialMessages[0] | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [assignments, setAssignments] = useState(initialAssignments);
-  const [messages, setMessages] = useState(initialMessages);
   const [editProfile, setEditProfile] = useState(false);
   const [showCourseDetail, setShowCourseDetail] = useState<any>(null);
+  const [composeMessage, setComposeMessage] = useState(false);
+  const [msgForm, setMsgForm] = useState({ recipientId: "", subject: "", body: "" });
   const [settingsToggles, setSettingsToggles] = useState<Record<string, boolean>>({
     "Class reminders": true, "Assignment deadlines": true, "New messages": true, "Grade updates": true,
   });
