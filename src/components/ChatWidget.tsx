@@ -205,9 +205,18 @@ const ChatWidget = () => {
                   <p className="text-xs text-muted-foreground">TrainingsforNepal</p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors">
-                <X className="h-5 w-5" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setMessages([defaultMsg])}
+                  className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors"
+                  title="Clear chat"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                <button onClick={() => setOpen(false)} className="rounded-md p-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
             </div>
 
             {/* Messages */}
