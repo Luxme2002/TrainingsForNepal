@@ -255,3 +255,19 @@ export function usePayments() {
     },
   });
 }
+
+export function useStudentPayments(studentId?: string) {
+  return useQuery({
+    queryKey: ["student-payments", studentId],
+    enabled: !!studentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("payments")
+        .select("*, course:courses(title, icon)")
+        .eq("student_id", studentId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Payment[];
+    },
+  });
+}
