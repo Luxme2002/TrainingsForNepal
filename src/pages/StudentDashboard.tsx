@@ -544,6 +544,61 @@ const StudentDashboard = () => {
             </motion.div>
           )}
 
+          {/* PAYMENTS */}
+          {active === "Payments" && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <h1 className="font-display text-xl font-bold text-foreground mb-6">Payment History</h1>
+              {loadingPayments ? (
+                <div className="text-center py-10 text-muted-foreground">Loading...</div>
+              ) : studentPayments.length === 0 ? (
+                <div className="gradient-card rounded-xl border border-border p-10 text-center">
+                  <DollarSign className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-display font-semibold text-foreground mb-1">No Payments Yet</h3>
+                  <p className="text-xs text-muted-foreground">Your payment history will appear here once fees are recorded.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-6 grid gap-4 sm:grid-cols-3">
+                    <div className="gradient-card rounded-xl border border-border p-5">
+                      <p className="text-xs text-muted-foreground">Total Paid</p>
+                      <p className="font-display text-2xl font-bold text-foreground">NPR {studentPayments.filter(p => p.status === "completed").reduce((s, p) => s + p.amount, 0).toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className="gradient-card rounded-xl border border-border p-5">
+                      <p className="text-xs text-muted-foreground">Pending</p>
+                      <p className="font-display text-2xl font-bold text-yellow-500">NPR {studentPayments.filter(p => p.status === "pending").reduce((s, p) => s + p.amount, 0).toLocaleString("en-IN")}</p>
+                    </div>
+                    <div className="gradient-card rounded-xl border border-border p-5">
+                      <p className="text-xs text-muted-foreground">Transactions</p>
+                      <p className="font-display text-2xl font-bold text-foreground">{studentPayments.length}</p>
+                    </div>
+                  </div>
+                  <div className="gradient-card rounded-xl border border-border p-5">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border text-left text-[10px] uppercase tracking-wider text-muted-foreground">
+                            <th className="pb-3 font-medium">Course</th><th className="pb-3 font-medium">Date</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Method</th><th className="pb-3 font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {studentPayments.map((p) => (
+                            <tr key={p.id} className="border-b border-border/50 last:border-0">
+                              <td className="py-3 text-foreground text-xs">{p.course?.icon} {p.course?.title || "—"}</td>
+                              <td className="py-3 text-muted-foreground text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
+                              <td className="py-3 font-medium text-foreground text-xs">{p.currency} {p.amount.toLocaleString("en-IN")}</td>
+                              <td className="py-3 text-muted-foreground text-xs capitalize">{p.payment_method || "—"}</td>
+                              <td className="py-3"><span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${p.status === "completed" ? "bg-primary/10 text-primary" : "bg-yellow-500/10 text-yellow-500"}`}>{p.status.toUpperCase()}</span></td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+
           {/* MY PROFILE */}
           {active === "My Profile" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
