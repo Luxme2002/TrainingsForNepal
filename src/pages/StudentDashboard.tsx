@@ -707,6 +707,30 @@ const StudentDashboard = () => {
             </motion.div>
           </motion.div>
         )}
+
+        {composeMessage && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setComposeMessage(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Compose Message</h2><button onClick={() => setComposeMessage(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Recipient</label>
+                  <select value={msgForm.recipientId} onChange={e => setMsgForm(p => ({ ...p, recipientId: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
+                    <option value="">-- Choose Recipient --</option>
+                    {allProfilesData.filter(p => p.user_id !== user?.id).map(p => <option key={p.user_id} value={p.user_id}>{p.full_name || p.user_id.slice(0, 8)} ({p.role})</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs text-muted-foreground">Subject</label><input value={msgForm.subject} onChange={e => setMsgForm(p => ({ ...p, subject: e.target.value }))} placeholder="Subject" className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
+                <div><label className="text-xs text-muted-foreground">Message</label><textarea value={msgForm.body} onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))} rows={5} placeholder="Write your message..." className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" /></div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={handleSendMessage}><Send className="mr-1 h-3 w-3" /> Send</Button>
+                <Button variant="outline" className="flex-1 border-border" onClick={() => setComposeMessage(false)}>Cancel</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
   );
