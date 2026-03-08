@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollments, useCertificates, useCourses } from "@/hooks/useDashboardData";
+import { useEnrollments, useCertificates, useCourses, useMessages, useAllProfiles } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
 
 const upcomingSessions = [
   { title: "Python Advanced OOP", time: "10:00 AM - 12:00 PM (NPT)", type: "LIVE LAB", date: "24 Mar", course: "Python" },
@@ -31,11 +32,7 @@ const resources = [
   { title: "SEO Toolkit Templates", type: "ZIP", course: "Digital Marketing", size: "3.1 MB" },
 ];
 
-const initialMessages = [
-  { from: "Sandip Lamichhane", subject: "Assignment Feedback", preview: "Great work on the data structures assignment. Your implementation of the binary search tree was excellent. Keep up the good work!", time: "2h ago", read: false },
-  { from: "Admin", subject: "Fee Reminder", preview: "Please ensure your next installment is paid by March 1st, 2026. Contact the office if you need any assistance.", time: "1d ago", read: true },
-  { from: "Priya Sharma", subject: "Class Rescheduled", preview: "Tomorrow's Digital Marketing class has been moved to 3:00 PM due to a scheduling conflict. Please plan accordingly.", time: "2d ago", read: true },
-];
+const initialMessages: any[] = [];
 
 type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "My Profile" | "Settings" | "Help Center";
 
