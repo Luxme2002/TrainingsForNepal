@@ -27,7 +27,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <ChatWidget />
+        <WhatsAppButton />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
