@@ -239,8 +239,18 @@ const AdminDashboard = () => {
     (s.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalRevenue = payments.filter(p => p.status === "completed").reduce((sum, p) => sum + p.amount, 0);
+  const pendingRevenue = payments.filter(p => p.status === "pending").reduce((sum, p) => sum + p.amount, 0);
+  const thisMonthPayments = payments.filter(p => {
+    const d = new Date(p.created_at);
+    const now = new Date();
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && p.status === "completed";
+  }).reduce((sum, p) => sum + p.amount, 0);
+
+  const formatNPR = (n: number) => `NPR ${n.toLocaleString("en-IN")}`;
+
   const stats = [
-    { icon: DollarSign, label: "Total Revenue", value: "NPR 12,50,000", change: "+18%", color: "from-primary/20 to-primary/5" },
+    { icon: DollarSign, label: "Total Revenue", value: formatNPR(totalRevenue), change: `${payments.length} txns`, color: "from-primary/20 to-primary/5" },
     { icon: Users, label: "Total Students", value: loadingProfiles ? "..." : students.length.toString(), change: "+12%", color: "from-blue-500/20 to-blue-500/5" },
     { icon: BookOpen, label: "Active Courses", value: loadingCourses ? "..." : courses.length.toString(), change: `${courses.length}`, color: "from-emerald-500/20 to-emerald-500/5" },
     { icon: TrendingUp, label: "Trainers", value: loadingProfiles ? "..." : trainers.length.toString(), change: "Active", color: "from-yellow-500/20 to-yellow-500/5" },
