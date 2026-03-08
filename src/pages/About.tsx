@@ -52,32 +52,6 @@ const About = () => (
       </div>
     </SectionWrapper>
 
-    {/* Achievements */}
-    <SectionWrapper className="bg-card/30">
-      <h2 className="mb-8 text-center font-display text-3xl font-bold text-foreground">
-        Standardizing <span className="text-gradient">Tech Excellence</span>
-      </h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { icon: Award, label: "ISO 9001:2015 Certified" },
-          { icon: Users, label: "5000+ Alumni Network" },
-          { icon: CheckCircle2, label: "CTEVT Affiliated" },
-          { icon: Target, label: "98% Job Placement" },
-        ].map((a, i) => (
-          <motion.div
-            key={a.label}
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-            className="flex flex-col items-center gap-3 rounded-xl border border-border bg-secondary/50 p-6 text-center"
-          >
-            <a.icon className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium text-foreground">{a.label}</span>
-          </motion.div>
-        ))}
-      </div>
-    </SectionWrapper>
 
     {/* Team */}
     <SectionWrapper>

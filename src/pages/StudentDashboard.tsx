@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -11,7 +11,8 @@ import { Progress } from "@/components/ui/progress";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useEnrollments, useCertificates, useCourses } from "@/hooks/useDashboardData";
+import { useEnrollments, useCertificates, useCourses, useMessages, useAllProfiles } from "@/hooks/useDashboardData";
+import { supabase } from "@/integrations/supabase/client";
 
 const upcomingSessions = [
   { title: "Python Advanced OOP", time: "10:00 AM - 12:00 PM (NPT)", type: "LIVE LAB", date: "24 Mar", course: "Python" },
@@ -31,11 +32,7 @@ const resources = [
   { title: "SEO Toolkit Templates", type: "ZIP", course: "Digital Marketing", size: "3.1 MB" },
 ];
 
-const initialMessages = [
-  { from: "Sandip Lamichhane", subject: "Assignment Feedback", preview: "Great work on the data structures assignment. Your implementation of the binary search tree was excellent. Keep up the good work!", time: "2h ago", read: false },
-  { from: "Admin", subject: "Fee Reminder", preview: "Please ensure your next installment is paid by March 1st, 2026. Contact the office if you need any assistance.", time: "1d ago", read: true },
-  { from: "Priya Sharma", subject: "Class Rescheduled", preview: "Tomorrow's Digital Marketing class has been moved to 3:00 PM due to a scheduling conflict. Please plan accordingly.", time: "2d ago", read: true },
-];
+const initialMessages: any[] = [];
 
 type ActiveSection = "Dashboard" | "My Courses" | "Schedule" | "Assignments" | "Certificates" | "Resources" | "Messages" | "My Profile" | "Settings" | "Help Center";
 
@@ -47,15 +44,18 @@ const StudentDashboard = () => {
   // Real data hooks
   const { data: enrollments = [], isLoading: loadingEnrollments } = useEnrollments(user?.id);
   const { data: certificates = [], isLoading: loadingCerts } = useCertificates(user?.id);
+  const { data: realMessages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: allProfilesData = [] } = useAllProfiles();
 
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [selectedMessage, setSelectedMessage] = useState<typeof initialMessages[0] | null>(null);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [assignments, setAssignments] = useState(initialAssignments);
-  const [messages, setMessages] = useState(initialMessages);
   const [editProfile, setEditProfile] = useState(false);
   const [showCourseDetail, setShowCourseDetail] = useState<any>(null);
+  const [composeMessage, setComposeMessage] = useState(false);
+  const [msgForm, setMsgForm] = useState({ recipientId: "", subject: "", body: "" });
   const [settingsToggles, setSettingsToggles] = useState<Record<string, boolean>>({
     "Class reminders": true, "Assignment deadlines": true, "New messages": true, "Grade updates": true,
   });
@@ -79,6 +79,34 @@ const StudentDashboard = () => {
     nextLesson: "Next Lesson",
     deadline: new Date(e.enrolled_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
   }));
+
+  // Realtime messages
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('student-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => { refetchMessages(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, refetchMessages]);
+
+  const handleSendMessage = async () => {
+    if (!msgForm.recipientId || !msgForm.body) return;
+    const { error } = await supabase.from("messages").insert({
+      sender_id: user!.id,
+      recipient_id: msgForm.recipientId,
+      subject: msgForm.subject || "No Subject",
+      body: msgForm.body,
+    });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Message Sent" });
+      setComposeMessage(false);
+      setMsgForm({ recipientId: "", subject: "", body: "" });
+      refetchMessages();
+    }
+  };
 
   const handleSubmitAssignment = (title: string) => {
     setAssignments(prev => prev.map(a => a.title === title ? { ...a, status: "Submitted" } : a));
@@ -442,54 +470,71 @@ const StudentDashboard = () => {
           {/* MESSAGES */}
           {active === "Messages" && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h1 className="font-display text-xl font-bold text-foreground mb-6">Messages</h1>
+              <div className="mb-6 flex items-center justify-between">
+                <h1 className="font-display text-xl font-bold text-foreground">Messages</h1>
+                <Button size="sm" className="gradient-primary border-0 text-primary-foreground" onClick={() => setComposeMessage(true)}>
+                  <Send className="mr-1 h-3 w-3" /> Compose
+                </Button>
+              </div>
               <div className="grid gap-6 lg:grid-cols-3">
                 <div className="space-y-2">
-                  {messages.map((m, i) => (
-                    <div key={i} className={`gradient-card rounded-xl border p-3 cursor-pointer hover:border-primary/50 transition-colors ${
-                      selectedMessage === m ? "border-primary" : !m.read ? "border-primary/30" : "border-border"
-                    }`} onClick={() => { setSelectedMessage(m); setMessages(prev => prev.map((msg, idx) => idx === i ? { ...msg, read: true } : msg)); }}>
-                      <div className="flex items-start justify-between mb-1">
-                        <span className={`text-sm font-medium ${!m.read ? "text-foreground" : "text-muted-foreground"}`}>{m.from}</span>
-                        <span className="text-[10px] text-muted-foreground">{m.time}</span>
-                      </div>
-                      <p className={`text-xs ${!m.read ? "text-foreground font-medium" : "text-muted-foreground"}`}>{m.subject}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{m.preview}</p>
+                  {realMessages.length === 0 ? (
+                    <div className="gradient-card rounded-xl border border-border p-6 text-center">
+                      <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No messages yet.</p>
                     </div>
-                  ))}
+                  ) : realMessages.map((m) => {
+                    const isSent = m.sender_id === user?.id;
+                    const otherUserId = isSent ? m.recipient_id : m.sender_id;
+                    const otherProfile = allProfilesData.find(p => p.user_id === otherUserId);
+                    return (
+                      <div key={m.id} className={`gradient-card rounded-xl border p-3 cursor-pointer hover:border-primary/50 transition-colors ${
+                        selectedMessage?.id === m.id ? "border-primary" : !m.read && !isSent ? "border-primary/30 bg-primary/5" : "border-border"
+                      }`} onClick={() => {
+                        setSelectedMessage(m);
+                        if (!m.read && !isSent) supabase.from("messages").update({ read: true }).eq("id", m.id).then(() => refetchMessages());
+                      }}>
+                        <div className="flex items-start justify-between mb-1">
+                          <span className={`text-sm font-medium ${!m.read && !isSent ? "text-foreground" : "text-muted-foreground"}`}>
+                            {isSent ? `To: ${otherProfile?.full_name || "User"}` : `From: ${otherProfile?.full_name || "User"}`}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className={`text-xs ${!m.read && !isSent ? "text-foreground font-medium" : "text-muted-foreground"}`}>{m.subject}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{m.body}</p>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="lg:col-span-2">
-                  {selectedMessage ? (
-                    <div className="gradient-card rounded-xl border border-border p-5">
-                      <div className="flex items-center justify-between mb-4">
-                        <div>
-                          <h3 className="font-display font-semibold text-foreground">{selectedMessage.subject}</h3>
-                          <p className="text-xs text-muted-foreground">From: {selectedMessage.from} • {selectedMessage.time}</p>
+                  {selectedMessage ? (() => {
+                    const isSent = selectedMessage.sender_id === user?.id;
+                    const otherUserId = isSent ? selectedMessage.recipient_id : selectedMessage.sender_id;
+                    const otherProfile = allProfilesData.find((p: any) => p.user_id === otherUserId);
+                    return (
+                      <div className="gradient-card rounded-xl border border-border p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <h3 className="font-display font-semibold text-foreground">{selectedMessage.subject}</h3>
+                            <p className="text-xs text-muted-foreground">{isSent ? `To: ${otherProfile?.full_name || "User"}` : `From: ${otherProfile?.full_name || "User"}`} • {new Date(selectedMessage.created_at).toLocaleString()}</p>
+                          </div>
+                          <button onClick={() => setSelectedMessage(null)}><X className="h-4 w-4 text-muted-foreground" /></button>
                         </div>
-                        <button onClick={() => setSelectedMessage(null)}><X className="h-4 w-4 text-muted-foreground" /></button>
+                        <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">{selectedMessage.body}</p>
+                        {!isSent && (
+                          <Button size="sm" className="mt-4 gradient-primary border-0 text-primary-foreground" onClick={() => {
+                            setMsgForm({ recipientId: selectedMessage.sender_id, subject: `Re: ${selectedMessage.subject}`, body: "" });
+                            setComposeMessage(true);
+                          }}>
+                            <Send className="mr-1 h-3 w-3" /> Reply
+                          </Button>
+                        )}
                       </div>
-                      <p className="text-sm text-foreground leading-relaxed mb-4">{selectedMessage.preview}</p>
-                      <div className="border-t border-border pt-4">
-                        <label className="text-xs text-muted-foreground">Reply</label>
-                        <textarea rows={3} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Type your reply..." />
-                        <Button size="sm" className="mt-2 gradient-primary border-0 text-primary-foreground"
-                          onClick={() => { setSelectedMessage(null); toast({ title: "Reply Sent", description: `Your reply to ${selectedMessage.from} has been sent.` }); }}>
-                          <Send className="mr-1 h-3 w-3" />Send Reply
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="gradient-card rounded-xl border border-border p-5">
-                      <h3 className="font-display font-semibold text-foreground mb-4">Compose Message</h3>
-                      <div className="space-y-3">
-                        <div><label className="text-xs text-muted-foreground">To</label><input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Trainer or Admin..." /></div>
-                        <div><label className="text-xs text-muted-foreground">Subject</label><input className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
-                        <div><label className="text-xs text-muted-foreground">Message</label><textarea rows={5} className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
-                        <Button size="sm" className="gradient-primary border-0 text-primary-foreground"
-                          onClick={() => toast({ title: "Message Sent", description: "Your message has been sent successfully." })}>
-                          <Send className="mr-1 h-3 w-3" />Send Message
-                        </Button>
-                      </div>
+                    );
+                  })() : (
+                    <div className="gradient-card rounded-xl border border-border p-10 text-center">
+                      <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Select a message to read</p>
                     </div>
                   )}
                 </div>
@@ -659,6 +704,30 @@ const StudentDashboard = () => {
                 onClick={() => { setShowCourseDetail(null); toast({ title: "Resuming Course", description: `Loading ${showCourseDetail.nextLesson}...` }); }}>
                 Continue Learning
               </Button>
+            </motion.div>
+          </motion.div>
+        )}
+
+        {composeMessage && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setComposeMessage(false)}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-card border border-border rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4"><h2 className="font-display font-bold text-foreground">Compose Message</h2><button onClick={() => setComposeMessage(false)}><X className="h-4 w-4 text-muted-foreground" /></button></div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-muted-foreground">Recipient</label>
+                  <select value={msgForm.recipientId} onChange={e => setMsgForm(p => ({ ...p, recipientId: e.target.value }))}
+                    className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary">
+                    <option value="">-- Choose Recipient --</option>
+                    {allProfilesData.filter(p => p.user_id !== user?.id).map(p => <option key={p.user_id} value={p.user_id}>{p.full_name || p.user_id.slice(0, 8)} ({p.role})</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs text-muted-foreground">Subject</label><input value={msgForm.subject} onChange={e => setMsgForm(p => ({ ...p, subject: e.target.value }))} placeholder="Subject" className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary" /></div>
+                <div><label className="text-xs text-muted-foreground">Message</label><textarea value={msgForm.body} onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))} rows={5} placeholder="Write your message..." className="mt-1 w-full rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary resize-none" /></div>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button className="flex-1 gradient-primary border-0 text-primary-foreground" onClick={handleSendMessage}><Send className="mr-1 h-3 w-3" /> Send</Button>
+                <Button variant="outline" className="flex-1 border-border" onClick={() => setComposeMessage(false)}>Cancel</Button>
+              </div>
             </motion.div>
           </motion.div>
         )}

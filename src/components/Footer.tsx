@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { GraduationCap, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, Youtube } from "lucide-react";
+import { GraduationCap, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from "lucide-react";
 
 const Footer = () => (
   <footer className="border-t border-border bg-card">
@@ -18,8 +18,12 @@ const Footer = () => (
             Nepal's premier IT training center. Empowering the next generation of tech professionals with industry-ready skills.
           </p>
           <div className="flex gap-3">
-            {[Facebook, Instagram, Linkedin, Youtube].map((Icon, i) => (
-              <a key={i} href="#" className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground">
+            {[
+              { Icon: Facebook, href: "https://www.facebook.com/Together4Nepal/" },
+              { Icon: Instagram, href: "https://www.instagram.com/together4nepal/" },
+              { Icon: Linkedin, href: "https://www.linkedin.com/company/together-for-nepal/posts/?feedView=all" },
+            ].map(({ Icon, href }) => (
+              <a key={href} href={href} target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground">
                 <Icon className="h-4 w-4" />
               </a>
             ))}

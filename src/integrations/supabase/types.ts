@@ -124,11 +124,15 @@ export type Database = {
       }
       courses: {
         Row: {
+          abstract: string | null
+          class_time: string | null
           created_at: string | null
           description: string | null
+          duration: string | null
           fee: string | null
           icon: string | null
           id: string
+          location: string | null
           rating: number | null
           status: string | null
           title: string
@@ -138,11 +142,15 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          abstract?: string | null
+          class_time?: string | null
           created_at?: string | null
           description?: string | null
+          duration?: string | null
           fee?: string | null
           icon?: string | null
           id?: string
+          location?: string | null
           rating?: number | null
           status?: string | null
           title: string
@@ -152,11 +160,15 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          abstract?: string | null
+          class_time?: string | null
           created_at?: string | null
           description?: string | null
+          duration?: string | null
           fee?: string | null
           icon?: string | null
           id?: string
+          location?: string | null
           rating?: number | null
           status?: string | null
           title?: string
@@ -204,6 +216,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read: boolean
+          recipient_id: string
+          sender_id: string
+          subject: string
+        }
+        Insert: {
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id: string
+          sender_id: string
+          subject?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read?: boolean
+          recipient_id?: string
+          sender_id?: string
+          subject?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
