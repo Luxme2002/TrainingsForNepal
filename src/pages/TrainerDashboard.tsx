@@ -85,6 +85,34 @@ const TrainerDashboard = () => {
     { text: "Rahul Hamal requested certificate", time: "1d ago", read: true },
   ]);
 
+  // Realtime messages
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('trainer-messages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => { refetchMessages(); })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, refetchMessages]);
+
+  const handleSendMessage = async () => {
+    if (!msgForm.recipientId || !msgForm.body) return;
+    const { error } = await supabase.from("messages").insert({
+      sender_id: user!.id,
+      recipient_id: msgForm.recipientId,
+      subject: msgForm.subject || "No Subject",
+      body: msgForm.body,
+    });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Message Sent" });
+      setComposeMessage(false);
+      setMsgForm({ recipientId: "", subject: "", body: "" });
+      refetchMessages();
+    }
+  };
+
   const filteredStudents = allStudents.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.course.toLowerCase().includes(searchQuery.toLowerCase())
