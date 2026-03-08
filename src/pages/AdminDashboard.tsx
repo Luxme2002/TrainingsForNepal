@@ -42,6 +42,7 @@ const AdminDashboard = () => {
   const { data: allProfilesData = [], isLoading: loadingProfiles } = useAllProfiles();
   const { data: allEnrollments = [], refetch: refetchEnrollments } = useAllEnrollments();
   const { data: messages = [], refetch: refetchMessages } = useMessages(user?.id);
+  const { data: payments = [], refetch: refetchPayments } = usePayments();
 
   const students = allProfilesData.filter(p => p.role === "student");
   const trainers = allProfilesData.filter(p => p.role === "trainer");
