@@ -47,7 +47,6 @@ const StudentDashboard = () => {
   const { data: realMessages = [], refetch: refetchMessages } = useMessages(user?.id);
   const { data: allProfilesData = [] } = useAllProfiles();
   const { data: studentPayments = [], isLoading: loadingPayments } = useStudentPayments(user?.id);
-  const { data: allProfilesData = [] } = useAllProfiles();
 
   const [active, setActive] = useState<ActiveSection>("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
