@@ -13,6 +13,10 @@ export interface Course {
   total_lessons: number | null;
   rating: number | null;
   created_at: string;
+  duration: string | null;
+  class_time: string | null;
+  location: string | null;
+  abstract: string | null;
 }
 
 export interface Enrollment {
@@ -62,6 +66,18 @@ export interface Profile {
   full_name: string | null;
   role: string;
   created_at: string;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  subject: string;
+  body: string;
+  read: boolean;
+  created_at: string;
+  sender_profile?: Profile;
+  recipient_profile?: Profile;
 }
 
 export function useCourses() {
@@ -173,17 +189,38 @@ export function useAllEnrollments() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("enrollments")
-        .select("*, course:courses(title, icon, fee), student:profiles!enrollments_student_id_fkey(full_name, user_id)")
+        .select("*, course:courses(title, icon, fee)")
         .order("enrolled_at", { ascending: false });
-      if (error) {
-        // Fallback without foreign key join
-        const { data: fallback, error: err2 } = await supabase
-          .from("enrollments")
-          .select("*, course:courses(title, icon, fee)")
-          .order("enrolled_at", { ascending: false });
-        if (err2) throw err2;
-        return fallback;
-      }
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useMessages(userId?: string) {
+  return useQuery({
+    queryKey: ["messages", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as Message[];
+    },
+  });
+}
+
+export function useSessions(courseId?: string) {
+  return useQuery({
+    queryKey: ["sessions", courseId],
+    queryFn: async () => {
+      let query = supabase.from("sessions").select("*, course:courses(title, icon)").order("session_date", { ascending: true });
+      if (courseId) query = query.eq("course_id", courseId);
+      const { data, error } = await query;
+      if (error) throw error;
       return data;
     },
   });
